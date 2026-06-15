@@ -9,14 +9,15 @@ function renderSidebar() {
   const sidebar = document.getElementById('sidebar')
   if (!sidebar) return
 
-  const currentPath = window.location.pathname
+  // Extract filename from pathname (handles /y-chat-frontend/ prefix)
+  const currentFile = window.location.pathname.split('/').pop() || 'index.html'
   const user = getUser()
 
   if (sidebarCollapsed) sidebar.classList.add('collapsed')
 
   let html = `
     <div class="sidebar-header">
-      <a href="/" class="sidebar-brand" style="display:flex;align-items:center;gap:2px;text-decoration:none">
+      <a href="." class="sidebar-brand" style="display:flex;align-items:center;gap:2px;text-decoration:none">
         <span class="logo-y logo-text">Y</span>
         <span class="logo-chat logo-text">Chat</span>
       </a>
@@ -25,22 +26,22 @@ function renderSidebar() {
   `
 
   const navItems = [
-    { href: '/', label: 'Home', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
-    { href: '/trending.html', label: 'Trending', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' },
-    { href: '/communities.html', label: 'Communities', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
-    { href: '/messages.html', label: 'Messages', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
-    { href: '/bookmarks.html', label: 'Bookmarks', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>' },
+    { href: '.', label: 'Home', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
+    { href: 'trending.html', label: 'Trending', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' },
+    { href: 'communities.html', label: 'Communities', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
+    { href: 'messages.html', label: 'Messages', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
+    { href: 'bookmarks.html', label: 'Bookmarks', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>' },
   ]
 
   navItems.forEach(item => {
-    const isActive = currentPath === item.href || (item.href === '/' && (currentPath === '/' || currentPath === '/index.html'))
+    const isActive = currentFile === item.href || (item.href === '.' && currentFile === 'index.html')
     html += `<a href="${item.href}" class="nav-link ${isActive ? 'active' : ''}">${item.icon}<span>${item.label}</span></a>`
   })
 
   html += `<div class="sidebar-divider"></div>`
 
   // Settings link always visible
-  html += `<a href="/settings.html" class="nav-link ${currentPath === '/settings.html' ? 'active' : ''}" style="margin-bottom:4px">
+  html += `<a href="settings.html" class="nav-link ${currentFile === 'settings.html' ? 'active' : ''}" style="margin-bottom:4px">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     <span>Einstellungen</span>
   </a>`
@@ -61,8 +62,8 @@ function renderSidebar() {
       communities.slice(0, 3).forEach(c => {
         const link = document.createElement('a')
         link.setAttribute('data-dynamic', '')
-        link.href = `/community.html?slug=${c.slug}`
-        link.className = `community-link ${currentPath.includes(c.slug) ? 'active' : ''}`
+        link.href = `community.html?slug=${c.slug}`
+        link.className = `community-link ${window.location.pathname.includes(c.slug) ? 'active' : ''}`
         link.innerHTML = `<span class="community-icon-small">${c.name[0]}</span><span class="truncate">${escapeHtml(c.name)}</span>`
         sidebarNav.appendChild(link)
       })
@@ -156,7 +157,7 @@ function renderRightPanel() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         Suche
       </div>
-      <a href="/search.html" style="display:block;text-decoration:none">
+      <a href="search.html" style="display:block;text-decoration:none">
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input type="text" placeholder="Suchen..." readonly>
@@ -181,7 +182,7 @@ function renderRightPanel() {
       return
     }
     trendingEl.innerHTML = items.map((item, i) => `
-      <a href="/community.html?slug=${item.slug}" class="trending-item" style="display:flex;align-items:center;gap:12px;padding:8px 0;text-decoration:none;color:inherit;border-bottom:1px solid rgba(30,41,59,0.3)">
+      <a href="community.html?slug=${item.slug}" class="trending-item" style="display:flex;align-items:center;gap:12px;padding:8px 0;text-decoration:none;color:inherit;border-bottom:1px solid rgba(30,41,59,0.3)">
         <div style="font-size:14px;font-weight:500;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">
           r/${item.slug}
         </div>

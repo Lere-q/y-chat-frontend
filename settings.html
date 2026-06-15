@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><base href="/y-chat-frontend/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Einstellungen - Y-Chat</title>
 <link rel="stylesheet" href="css/style.css">
@@ -58,7 +58,7 @@
 <script>
 function loadSettings() {
   const user = getUser()
-  if (!user) { location.href = '/login.html'; return }
+  if (!user) { location.href='login.html'; return }
 
   const avatarEl = document.getElementById('settingsAvatar')
   avatarEl.innerHTML = getAvatarHtml(user, 'xl')

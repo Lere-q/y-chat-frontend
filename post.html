@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><base href="/y-chat-frontend/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Beitrag - Y-Chat</title>
 <link rel="stylesheet" href="css/style.css">
@@ -16,7 +16,7 @@
     <div class="search-wrap">
       <div class="search-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" placeholder="Suchen..." onclick="location.href='/search.html'" readonly>
+        <input type="text" placeholder="Suchen..." onclick="location.href='search.html'" readonly>
       </div>
     </div>
     <div id="topBarAvatar"></div>
@@ -77,11 +77,11 @@ async function loadReplies() {
         <div class="post-card" style="padding:10px 16px">
           <div class="post-card-inner" style="gap:8px">
             <div class="post-avatar">
-              <a href="/profile.html?id=${r.author.id}">${getAvatarHtml(r.author, 'sm')}</a>
+              <a href="profile.html?id=${r.author.id}">${getAvatarHtml(r.author, 'sm')}</a>
             </div>
             <div class="post-body">
               <div style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:2px">
-                <a href="/profile.html?id=${r.author.id}" style="font-weight:500;color:#fff;text-decoration:none">${escapeHtml(r.author.name)}</a>
+                <a href="profile.html?id=${r.author.id}" style="font-weight:500;color:#fff;text-decoration:none">${escapeHtml(r.author.name)}</a>
                 <span style="color:#64748b">·</span>
                 <span style="color:#64748b;font-size:12px">${formatDate(r.createdAt)}</span>
               </div>

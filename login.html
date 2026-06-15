@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><base href="/y-chat-frontend/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anmelden - Y-Chat</title>
 <link rel="stylesheet" href="css/style.css">
@@ -29,7 +29,7 @@
       <button type="submit" class="btn btn-primary btn-full">Anmelden</button>
     </form>
     <div class="auth-footer">
-      Noch kein Konto? <a href="/register.html">Registrieren</a>
+      Noch kein Konto? <a href="register.html">Registrieren</a>
     </div>
   </div>
 </div>
@@ -48,7 +48,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
     localStorage.setItem('token', data.data.token)
     localStorage.setItem('user', JSON.stringify(data.data.user))
-    location.href = '/'
+    location.href = '.'
   } catch (err) {
     errorEl.textContent = err.message
     errorEl.classList.remove('hidden')

@@ -52,7 +52,7 @@ function clearUser() {
 function logout() {
   clearToken()
   clearUser()
-  window.location.href = '/login.html'
+  window.location.href='login.html'
 }
 
 function isLoggedIn() {
@@ -61,7 +61,7 @@ function isLoggedIn() {
 
 function requireAuth() {
   if (!isLoggedIn()) {
-    window.location.href = '/login.html'
+    window.location.href='login.html'
     return false
   }
   return true

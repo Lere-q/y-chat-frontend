@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><base href="/y-chat-frontend/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Suche - Y-Chat</title>
 <link rel="stylesheet" href="css/style.css">
@@ -70,7 +70,7 @@ function search() {
       el.innerHTML = items.map(p => createPostCard(p)).join('')
     } else if (searchType === 'communities') {
       el.innerHTML = items.map(c => `
-        <a href="/community.html?slug=${c.slug}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
+        <a href="community.html?slug=${c.slug}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
           <span style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
           <div style="flex:1;min-width:0">
             <div style="font-weight:600;color:#fff">r/${escapeHtml(c.slug)}</div>
@@ -80,7 +80,7 @@ function search() {
       `).join('')
     } else if (searchType === 'users') {
       el.innerHTML = items.map(u => `
-        <a href="/profile.html?id=${u.id}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
+        <a href="profile.html?id=${u.id}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
           ${getAvatarHtml(u, 'md')}
           <div style="flex:1;min-width:0">
             <div style="font-weight:500;color:#fff">${escapeHtml(u.name)}</div>

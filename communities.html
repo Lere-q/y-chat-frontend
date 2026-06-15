@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><base href="/y-chat-frontend/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Communities - Y-Chat</title>
 <link rel="stylesheet" href="css/style.css">
@@ -20,7 +20,7 @@
     <div class="content-card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px">
         <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0">Alle Communities</h2>
-        <a href="/community-new.html" class="btn btn-primary btn-sm">Erstellen</a>
+        <a href="community-new.html" class="btn btn-primary btn-sm">Erstellen</a>
       </div>
       <div class="search-box" style="margin-bottom:16px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -57,7 +57,7 @@ function renderCommunities(list) {
     return
   }
   el.innerHTML = list.map(c => `
-    <a href="/community.html?slug=${c.slug}" class="community-card" style="text-decoration:none;color:inherit">
+    <a href="community.html?slug=${c.slug}" class="community-card" style="text-decoration:none;color:inherit">
       <div class="community-card-header">
         <span style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
         <div class="community-card-info">

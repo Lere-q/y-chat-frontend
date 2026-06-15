@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><base href="/y-chat-frontend/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Community erstellen - Y-Chat</title>
 <link rel="stylesheet" href="css/style.css">
@@ -83,7 +83,7 @@ document.getElementById('communityForm').addEventListener('submit', async (e) =>
   try {
     await api('/communities', { method: 'POST', body: JSON.stringify({ name, slug, description, isPrivate }) })
     showToast('Community erstellt', 'success')
-    location.href = `/community.html?slug=${slug}`
+    location.href = `community.html?slug=${slug}`
   } catch (err) {
     errorEl.textContent = err.message
     errorEl.classList.remove('hidden')
