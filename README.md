@@ -20,17 +20,13 @@ The frontend is a pure static site that connects to the Y-Chat backend API.
 ### Setup
 
 1. Enable GitHub Pages in your repo settings (branch: `main`, folder: `/frontend`)
-2. Update `API_BASE` in `js/api.js` to point to your backend server
-3. Update the Socket.IO server URL in `messages.html`
+2. Update `API_BASE` in `frontend/js/api.js` to point to your backend server
+3. Update the Socket.IO server URL in `frontend/messages.html`
 
 ## Backend
 
 The backend is an Express.js server with Socket.IO and Prisma (SQLite).  
-Find it in the `backend/` folder of the original repository or at:
-
-```bash
-git clone https://github.com/Lere-q/y-chat-backend
-```
+Find it in the `backend/` folder.
 
 ### Backend Quick Start
 
