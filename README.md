@@ -21,4 +21,4 @@ A social platform for communities, chats, and posts. Built with a static fronten
 
 ## License
 
-MIT
+Custom Non-Commercial Copyleft License (CNCCL) v1.0

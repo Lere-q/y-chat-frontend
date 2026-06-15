@@ -1,21 +1,45 @@
-MIT License
-
-Copyright (c) 2024 Lere-q
+Custom Non-Commercial Copyleft License (CNCCL) v1.0
+Copyright (c) 2026 Lere-q
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this software and associated documentation files (the "Software"), to use,
+copy, modify, and distribute the Software, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. OPEN SOURCE REQUIREMENT (Copyleft)
+   Any modified or derivative version of this Software must be made publicly
+   available under the same license terms as this License. You may not
+   distribute modified versions without also providing the complete
+   corresponding source code.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. NON-COMMERCIAL USE ONLY
+   The Software, in whole or in part, may not be sold, licensed for a fee,
+   or used to generate direct or indirect revenue. This includes, but is not
+   limited to:
+   - Selling access to the Software or any service built upon it
+   - Incorporating the Software into a commercial product or SaaS offering
+   - Using the Software as part of a paid subscription or freemium model
+
+3. NO INFRASTRUCTURE / BACKEND ABUSE
+   You may not use, access, replicate, or exploit the original author's
+   backend systems, APIs, servers, databases, or infrastructure — whether
+   documented or undocumented — without prior explicit written permission
+   from the copyright holder. Reverse engineering or scraping such systems
+   for the purpose of replication or abuse is strictly prohibited.
+
+4. ATTRIBUTION
+   The above copyright notice and this permission notice must be included in
+   all copies or substantial portions of the Software.
+
+5. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+6. TERMINATION
+   Any violation of the above conditions automatically terminates your rights
+   under this License. Upon termination, you must cease all use and destroy
+   all copies of the Software in your possession.
