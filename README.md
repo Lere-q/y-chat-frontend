@@ -23,29 +23,11 @@ The frontend is a pure static site that connects to the Y-Chat backend API.
 2. Update `API_BASE` in `frontend/js/api.js` to point to your backend server
 3. Update the Socket.IO server URL in `frontend/messages.html`
 
-## Backend
-
-The backend is an Express.js server with Socket.IO and Prisma (SQLite).  
-Find it in the `backend/` folder.
-
-### Backend Quick Start
-
-```bash
-cd backend
-npm install
-npx prisma generate
-npx prisma db push
-node main.js
-```
-
-Default port: `40272` · Public IP: `168.119.139.61:40272`
-
 ## Tech Stack
 
-- **Frontend:** Vanilla HTML, CSS, JavaScript
-- **Backend:** Express.js, Socket.IO, Prisma (SQLite)
-- **Real-time:** Socket.IO
-- **Auth:** JWT (JSON Web Tokens)
+- HTML, CSS, JavaScript
+- Socket.IO
+- JWT
 
 ## License
 
