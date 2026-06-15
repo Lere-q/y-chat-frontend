@@ -7,42 +7,133 @@ function renderSidebar() {
   const currentPath = window.location.pathname
   const user = getUser()
 
+  let html = `
+    <div class="sidebar-header">
+      <a href="/" class="sidebar-brand" style="display:flex;align-items:center;gap:2px;text-decoration:none">
+        <span class="logo-y logo-text">Y</span>
+        <span class="logo-chat logo-text">Chat</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+  `
+
   const navItems = [
     { href: '/', label: 'Home', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
+    { href: '/trending.html', label: 'Trending', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' },
     { href: '/communities.html', label: 'Communities', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
     { href: '/messages.html', label: 'Messages', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
-    { href: '/trending.html', label: 'Trending', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' },
-    { href: '/search.html', label: 'Suche', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' },
-    { href: '/bookmarks.html', label: 'Lesezeichen', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>' },
-    { href: '/settings.html', label: 'Einstellungen', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
+    { href: '/bookmarks.html', label: 'Bookmarks', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>' },
   ]
 
-  let html = `<div class="logo">Y-Chat</div>`
+  navItems.forEach(item => {
+    const isActive = currentPath === item.href || (item.href === '/' && (currentPath === '/' || currentPath === '/index.html'))
+    html += `<a href="${item.href}" class="nav-link ${isActive ? 'active' : ''}">${item.icon}<span>${item.label}</span></a>`
+  })
+
+  html += `<div class="sidebar-divider"></div>`
+
+  // Load communities for sidebar (async, will append after)
+  loadCommunitiesForSidebar().then(communities => {
+    const sidebarNav = sidebar.querySelector('.sidebar-nav')
+    if (!sidebarNav) return
+    const existingDynamic = sidebarNav.querySelectorAll('[data-dynamic]')
+    existingDynamic.forEach(el => el.remove())
+    if (communities.length > 0) {
+      const label = document.createElement('div')
+      label.setAttribute('data-dynamic', '')
+      label.className = 'sidebar-section-label'
+      label.textContent = 'Communities'
+      sidebarNav.appendChild(label)
+
+      communities.slice(0, 3).forEach(c => {
+        const link = document.createElement('a')
+        link.setAttribute('data-dynamic', '')
+        link.href = `/community.html?slug=${c.slug}`
+        link.className = `community-link ${currentPath.includes(c.slug) ? 'active' : ''}`
+        link.innerHTML = `<span class="community-icon-small">${c.name[0]}</span><span class="truncate">${escapeHtml(c.name)}</span>`
+        sidebarNav.appendChild(link)
+      })
+
+      const viewAll = document.createElement('a')
+      viewAll.setAttribute('data-dynamic', '')
+      viewAll.href = '/communities.html'
+      viewAll.className = 'view-all-link'
+      viewAll.textContent = 'Alle anzeigen'
+      sidebarNav.appendChild(viewAll)
+    }
+  })
+
+  // Sidebar collapse toggle (desktop only)
+  html += `</nav>
+    <div class="sidebar-footer">
+      <button class="collapse-btn" onclick="toggleSidebarCollapse()" title="Sidebar umschalten" style="display:flex;align-items:center;justify-content:center;width:100%;margin-top:4px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+  `
 
   if (user) {
     html += `
-      <a href="/profile.html" class="nav-item ${currentPath === '/profile.html' || currentPath === '/' ? '' : ''}" style="margin-bottom:12px">
-        ${getAvatarHtml(user, 'sm')}
-        <span>${escapeHtml(user.name)}</span>
+      <a href="/settings.html" class="settings-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Einstellungen</span>
       </a>
+      <div class="user-card">
+        ${getAvatarHtml(user, 'sm')}
+        <span class="user-name">${escapeHtml(user.name)}</span>
+        <button class="logout-btn" onclick="logout()" title="Abmelden">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
     `
   }
 
-  navItems.forEach(item => {
-    const isActive = currentPath === item.href || (item.href === '/' && currentPath === '/index.html')
-    html += `<a href="${item.href}" class="nav-item ${isActive ? 'active' : ''}">${item.icon}<span>${item.label}</span></a>`
-  })
-
-  if (user) {
-    html += `<div style="margin-top:auto;border-top:1px solid var(--border);padding-top:8px">
-      <button class="nav-item" onclick="logout()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span>Abmelden</span>
-      </button>
-    </div>`
-  }
-
+  html += '</div>'
   sidebar.innerHTML = html
+  sidebar.classList.remove('mobile-open')
+}
+
+let sidebarCollapsed = false
+
+function toggleSidebarCollapse() {
+  const sidebar = document.getElementById('sidebar')
+  if (!sidebar) return
+  sidebarCollapsed = !sidebarCollapsed
+  sidebar.classList.toggle('collapsed', sidebarCollapsed)
+  const main = document.querySelector('.main-content')
+  if (main) {
+    const newLeft = sidebarCollapsed ? '60px' : '220px'
+    if (window.innerWidth >= 1024) {
+      main.style.marginLeft = newLeft
+    }
+  }
+  localStorage.setItem('sidebarCollapsed', sidebarCollapsed)
+}
+
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar')
+  const overlay = document.getElementById('mobileOverlay')
+  if (!sidebar) return
+  const isOpen = sidebar.classList.contains('mobile-open')
+  sidebar.classList.toggle('mobile-open')
+  if (overlay) {
+    overlay.classList.add('sidebar-backdrop')
+    overlay.classList.toggle('hidden')
+    overlay.classList.toggle('open', !isOpen)
+  }
+}
+
+function renderTopBarAvatar() {
+  const el = document.getElementById('topBarAvatar')
+  if (!el) return
+  const user = getUser()
+  el.innerHTML = user ? getAvatarHtml(user, 'sm') : ''
+}
+
+async function loadCommunitiesForSidebar() {
+  try {
+    const data = await api('/communities?limit=3')
+    return data.data || []
+  } catch { return [] }
 }
 
 function renderRightPanel() {
@@ -50,27 +141,69 @@ function renderRightPanel() {
   if (!panel) return
 
   panel.innerHTML = `
-    <div style="background:var(--bg-surface);border-radius:12px;padding:16px;margin-bottom:16px">
-      <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">Trending</h3>
-      <div id="trendingMini"></div>
+    <div class="panel-card" id="trendingCard">
+      <div class="panel-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Trending
+      </div>
+      <div id="trendingMini"><p class="text-sm text-muted">Keine Trending-Daten</p></div>
+    </div>
+    <div class="panel-card">
+      <div class="panel-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Suche
+      </div>
+      <a href="/search.html" style="display:block;text-decoration:none">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" placeholder="Suchen..." readonly>
+        </div>
+      </a>
+    </div>
+    <div class="panel-card">
+      <div class="panel-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Online jetzt
+      </div>
+      <div id="onlineUsers"><p class="text-sm text-muted">Keine User online</p></div>
     </div>
   `
 
-  const trendingEl = document.getElementById('trendingMini')
-  if (trendingEl) {
-    trendingEl.innerHTML = '<div class="skeleton" style="height:32px;margin-bottom:4px"></div><div class="skeleton" style="height:32px;margin-bottom:4px"></div><div class="skeleton" style="height:32px"></div>'
+  // Load trending
+  api('/trending').then(data => {
+    const trendingEl = document.getElementById('trendingMini')
+    const items = (data.data || []).slice(0, 5)
+    if (items.length === 0) {
+      trendingEl.innerHTML = '<p class="text-sm text-muted">Keine Trending-Daten</p>'
+      return
+    }
+    trendingEl.innerHTML = items.map((item, i) => `
+      <a href="/community.html?slug=${item.slug}" class="trending-item" style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid rgba(30,41,59,0.3);text-decoration:none;color:inherit">
+        <div style="font-size:12px;font-weight:700;color:#475569;width:16px;flex-shrink:0;text-align:center">${i + 1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">r/${item.slug}</div>
+          <div style="display:flex;gap:12px;font-size:11px;color:#64748b;margin-top:2px">
+            <span>📝 ${item.postCount} heute</span>
+            <span>👥 ${item.memberCount}</span>
+          </div>
+        </div>
+      </a>
+    `).join('')
+  }).catch(() => {})
 
-    api('/trending').then(data => {
-      const communities = (data.data || []).slice(0, 5)
-      trendingEl.innerHTML = communities.map((c, i) => `
-        <a href="/community.html?slug=${c.slug}" style="display:flex;align-items:center;gap:8px;padding:6px 0;text-decoration:none;color:inherit;border-bottom:1px solid rgba(51,65,85,0.3)">
-          <span style="font-size:12px;font-weight:700;color:#475569;width:16px">${i+1}</span>
-          <span style="flex:1;font-size:13px;color:white;truncate">${escapeHtml(c.name)}</span>
-          <span style="font-size:11px;color:var(--text-muted)">${c.postCount}</span>
-        </a>
-      `).join('')
-    }).catch(() => {
-      if (trendingEl) trendingEl.innerHTML = '<p style="font-size:12px;color:var(--text-muted)">Keine Daten</p>'
-    })
-  }
+  // Try to load online users - placeholder
+  api('/users/online').then(data => {
+    const onlineEl = document.getElementById('onlineUsers')
+    const users = (data.data || []).slice(0, 8)
+    if (users.length === 0) {
+      onlineEl.innerHTML = '<p class="text-sm text-muted">Keine User online</p>'
+      return
+    }
+    onlineEl.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+      users.map(u => `<div style="position:relative;display:inline-flex" title="${escapeHtml(u.name)}">
+        ${getAvatarHtml(u, 'sm')}
+        <span style="position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;background:#22c55e;border-radius:50%;border:2px solid #0f172a"></span>
+      </div>`).join('') +
+      '</div>'
+  }).catch(() => {})
 }

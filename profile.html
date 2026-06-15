@@ -8,113 +8,110 @@
 </head>
 <body>
 <div class="app-layout">
-  <nav class="sidebar" id="sidebar"></nav>
-  <main class="main-content" id="mainContent">
-    <div id="loadingState" class="empty-state"><p>Laden...</p></div>
+  <div id="sidebar"></div>
+  <header class="top-bar">
+    <button class="menu-btn" onclick="toggleMobileSidebar()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Suchen..." onclick="location.href='/search.html'" readonly>
+      </div>
+    </div>
+    <div id="topBarAvatar"></div>
+  </header>
+  <main class="main-content">
+    <div id="profileHeader"></div>
+    <div id="profilePosts"></div>
   </main>
   <aside class="right-panel" id="rightPanel"></aside>
 </div>
-
+<div id="mobileOverlay" class="modal-overlay hidden" onclick="toggleMobileSidebar()"></div>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
 <script src="js/layout.js"></script>
 <script>
-const profileId = new URLSearchParams(location.search).get('id')
-let currentTab = 'posts'
+const params = new URLSearchParams(location.search)
+const profileId = params.get('id')
 
 async function loadProfile() {
-  const userId = profileId || getUser()?.id
-  if (!userId) { window.location.href = '/login.html'; return }
+  if (!profileId) {
+    const user = getUser()
+    if (user) {
+      location.href = `/profile.html?id=${user.id}`
+      return
+    }
+    location.href = '/login.html'
+    return
+  }
 
   try {
-    const [profileData, postsData] = await Promise.all([
-      api(`/users/${userId}`),
-      api(`/users/${userId}/posts`),
-    ])
+    let profile
+    try { profile = await api(`/users/${profileId}`); profile = profile.data } catch {}
+    if (!profile) {
+      // Try fetching current user
+      const user = getUser()
+      if (user && user.id === profileId) {
+        profile = user
+      } else {
+        document.getElementById('profileHeader').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'
+        return
+      }
+    }
 
-    const profile = profileData.data
-    const posts = postsData.data || []
+    document.title = `${escapeHtml(profile.name)} - Y-Chat`
+    renderProfile(profile)
+    loadProfilePosts(profileId)
+  } catch {
+    document.getElementById('profileHeader').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'
+  }
+}
 
-    let html = `
-      <div class="profile-header">
-        ${getAvatarHtml(profile, 'xl')}
-        <div class="profile-info">
-          <h2>${escapeHtml(profile.name)}</h2>
-          ${profile.bio ? `<div class="profile-bio">${escapeHtml(profile.bio)}</div>` : ''}
-          <div class="profile-stats">
-            <span><strong>${profile._count.posts}</strong> Beiträge</span>
-            <span><strong>${profile._count.followers}</strong> Follower</span>
-            <span><strong>${profile._count.following}</strong> Folgt</span>
-          </div>
-          ${!profile.isOwnProfile ? `
-            <button class="btn ${profile.isFollowing ? 'btn-ghost' : 'btn-primary'}" style="margin-top:12px" onclick="toggleFollow('${profile.id}')" id="followBtn">
-              ${profile.isFollowing ? 'Folgen' : 'Folgen'}
-            </button>
-          ` : `
-            <a href="/settings.html" class="btn btn-ghost" style="margin-top:12px;display:inline-flex">Einstellungen</a>
-          `}
+function renderProfile(profile) {
+  const el = document.getElementById('profileHeader')
+  const currentUser = getUser()
+  const isOwn = currentUser && currentUser.id === profile.id
+
+  el.innerHTML = `
+    <div class="content-card" style="overflow:hidden;border-bottom:1px solid #1e293b;border-radius:0">
+      <div style="height:128px;background:linear-gradient(to right,#3730a3,#334155)"></div>
+      <div style="padding:0 16px 16px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:-40px;margin-bottom:12px;width:fit-content">
+          <div style="border:4px solid #0f172a;border-radius:50%;display:inline-flex">${getAvatarHtml(profile, 'xl')}</div>
+          ${isOwn ? `<a href="/settings.html" class="btn btn-outline btn-sm" style="margin-left:auto;margin-bottom:8px">Profil bearbeiten</a>` : ''}
+        </div>
+        <h1 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 2px">${escapeHtml(profile.name)}</h1>
+        <p style="font-size:14px;color:#64748b;margin:0">@${escapeHtml(profile.username || '')}</p>
+        ${profile.bio ? `<p style="font-size:14px;color:#94a3b8;margin:8px 0;line-height:1.4;white-space:pre-wrap">${escapeHtml(profile.bio)}</p>` : ''}
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:14px;color:#64748b">
+          <span><strong style="color:#fff;font-weight:600">${profile._count?.posts || 0}</strong> Beiträge</span>
+          <span><strong style="color:#fff;font-weight:600">${profile._count?.followers || 0}</strong> Follower</span>
+          <span><strong style="color:#fff;font-weight:600">${profile._count?.following || 0}</strong> Folgt</span>
         </div>
       </div>
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('posts')">Beiträge</button>
-        <button class="tab-btn" onclick="switchTab('liked')">Gefällt mir</button>
-      </div>
-      <div id="postsContainer">
-    `
-
-    if (posts.length === 0) {
-      html += '<div class="empty-state"><p>Noch keine Beiträge</p></div>'
-    } else {
-      html += posts.map(p => createPostCard(p)).join('')
-    }
-
-    html += '</div></div>'
-    document.getElementById('mainContent').innerHTML = html
-  } catch (err) {
-    document.getElementById('mainContent').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'
-  }
+    </div>
+  `
 }
 
-async function switchTab(tab) {
-  currentTab = tab
-  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'))
-  document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active')
-
-  const userId = profileId || getUser()?.id
-  const container = document.getElementById('postsContainer')
-
+async function loadProfilePosts(userId) {
+  const el = document.getElementById('profilePosts')
   try {
-    const endpoint = tab === 'liked' ? `/users/${userId}/likes` : `/users/${userId}/posts`
-    const data = await api(endpoint)
+    const data = await api(`/posts?authorId=${userId}&limit=50`)
     const posts = data.data || []
-
     if (posts.length === 0) {
-      container.innerHTML = '<div class="empty-state"><p>Keine Beiträge</p></div>'
-    } else {
-      container.innerHTML = posts.map(p => createPostCard(p)).join('')
+      el.innerHTML = '<div class="empty-state" style="margin-top:8px"><p>Noch keine Beiträge</p></div>'
+      return
     }
+    el.innerHTML = posts.map(p => createPostCard(p)).join('')
   } catch {
-    container.innerHTML = '<div class="empty-state"><p>Fehler beim Laden</p></div>'
-  }
-}
-
-async function toggleFollow(userId) {
-  const btn = document.getElementById('followBtn')
-  try {
-    if (btn.textContent === 'Folgen') {
-      await api(`/users/${userId}/follow`, { method: 'POST' })
-    } else {
-      await api(`/users/${userId}/follow`, { method: 'DELETE' })
-    }
-    loadProfile()
-  } catch (err) {
-    showToast(err.message, 'error')
+    el.innerHTML = '<div class="empty-state" style="margin-top:8px"><p>Fehler beim Laden</p></div>'
   }
 }
 
 function render() {
-  requireAuth()
   renderSidebar()
+  renderTopBarAvatar()
   renderRightPanel()
   loadProfile()
 }

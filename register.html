@@ -6,73 +6,64 @@
 <title>Registrieren - Y-Chat</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-<div class="auth-page">
+<body class="auth-page">
+<div class="auth-container">
   <div class="auth-card">
-    <h1>Registrieren</h1>
-    <div id="errorBox" class="error-box hidden"></div>
-    <form id="registerForm">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <span class="logo-y logo-text">Y</span><span class="logo-chat logo-text">Chat</span>
+      </div>
+      <h1 class="auth-title">Konto erstellen</h1>
+      <p class="auth-subtitle">Tritt der Community bei</p>
+    </div>
+    <form class="auth-form" id="registerForm">
       <div class="form-group">
         <label for="name">Name</label>
-        <input id="name" type="text" class="form-input" placeholder="Dein Name" required>
+        <input type="text" id="name" placeholder="Dein Name" required>
       </div>
       <div class="form-group">
         <label for="email">E-Mail</label>
-        <input id="email" type="email" class="form-input" placeholder="deine@email.de" required>
+        <input type="email" id="email" placeholder="name@beispiel.de" required>
+      </div>
+      <div class="form-group">
+        <label for="username">Benutzername</label>
+        <input type="text" id="username" placeholder="benutzername" required>
       </div>
       <div class="form-group">
         <label for="password">Passwort</label>
-        <input id="password" type="password" class="form-input" placeholder="••••••••" required minlength="8">
+        <input type="password" id="password" placeholder="••••••••" required>
       </div>
-      <div class="form-group">
-        <label for="passwordConfirm">Passwort wiederholen</label>
-        <input id="passwordConfirm" type="password" class="form-input" placeholder="••••••••" required minlength="8">
-      </div>
-      <button type="submit" class="btn btn-primary btn-block" id="registerBtn">Registrieren</button>
+      <div class="form-error hidden" id="formError"></div>
+      <button type="submit" class="btn btn-primary btn-full">Registrieren</button>
     </form>
-    <p style="text-align:center;margin-top:24px;font-size:14px;color:var(--text-muted)">
-      Bereits ein Konto? <a href="/login.html">Anmelden</a>
-    </p>
+    <div class="auth-footer">
+      Bereits registriert? <a href="/login.html">Anmelden</a>
+    </div>
   </div>
 </div>
-
 <script src="js/api.js"></script>
 <script>
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
   e.preventDefault()
   const name = document.getElementById('name').value
   const email = document.getElementById('email').value
+  const username = document.getElementById('username').value
   const password = document.getElementById('password').value
-  const passwordConfirm = document.getElementById('passwordConfirm').value
-  const btn = document.getElementById('registerBtn')
-  const errorBox = document.getElementById('errorBox')
+  const errorEl = document.getElementById('formError')
+  const btn = e.target.querySelector('button[type="submit"]')
 
-  errorBox.classList.add('hidden')
-
-  if (password !== passwordConfirm) {
-    errorBox.textContent = 'Passwörter stimmen nicht überein'
-    errorBox.classList.remove('hidden')
-    return
-  }
-
+  errorEl.classList.add('hidden')
   btn.disabled = true
-  btn.textContent = 'Wird registriert...'
-
   try {
-    const data = await api('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ name, email, password }),
-    })
-    setToken(data.data.token)
-    setUser(data.data)
-    window.location.href = '/'
+    const data = await api('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, username, password }) })
+    localStorage.setItem('token', data.data.token)
+    localStorage.setItem('user', JSON.stringify(data.data.user))
+    location.href = '/'
   } catch (err) {
-    errorBox.textContent = err.message || 'Registrierung fehlgeschlagen'
-    errorBox.classList.remove('hidden')
+    errorEl.textContent = err.message
+    errorEl.classList.remove('hidden')
   }
-
   btn.disabled = false
-  btn.textContent = 'Registrieren'
 })
 </script>
 </body>

@@ -8,117 +8,90 @@
 </head>
 <body>
 <div class="app-layout">
-  <nav class="sidebar" id="sidebar"></nav>
+  <div id="sidebar"></div>
+  <header class="top-bar">
+    <button class="menu-btn" onclick="toggleMobileSidebar()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <h1 class="page-title">Suche</h1>
+    <div id="topBarAvatar"></div>
+  </header>
   <main class="main-content">
-    <div class="page-header">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <h1>Suche</h1>
-    </div>
-    <div style="padding:16px">
-      <div class="search-box">
+    <div class="content-card">
+      <div class="search-box" style="width:100%;margin-bottom:16px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="searchQuery" placeholder="Suchen..." onkeydown="if(event.key==='Enter')doSearch()">
+        <input type="text" id="searchInput" placeholder="Suche nach Beiträgen, Communities..." onkeydown="if(event.key==='Enter')search()">
       </div>
-      <div class="tabs" id="searchTabs">
-        <button class="tab-btn active" onclick="switchSearchTab('all')">Alle</button>
-        <button class="tab-btn" onclick="switchSearchTab('users')">User</button>
-        <button class="tab-btn" onclick="switchSearchTab('communities')">Communities</button>
-        <button class="tab-btn" onclick="switchSearchTab('posts')">Posts</button>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <select id="searchType" style="padding:6px 12px;border-radius:8px;background:#0F172A;border:1px solid #334155;color:#F1F5F9;font-size:13px">
+          <option value="posts">Beiträge</option>
+          <option value="communities">Communities</option>
+          <option value="users">Benutzer</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="search()">Suchen</button>
       </div>
-      <div id="searchResults"></div>
+      <div id="searchResults">
+        <div class="empty-state"><p>Gib einen Suchbegriff ein</p></div>
+      </div>
     </div>
   </main>
   <aside class="right-panel" id="rightPanel"></aside>
 </div>
-
+<div id="mobileOverlay" class="modal-overlay hidden" onclick="toggleMobileSidebar()"></div>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
 <script src="js/layout.js"></script>
 <script>
-let searchType = 'all'
+function search() {
+  const query = document.getElementById('searchInput').value.trim()
+  const type = document.getElementById('searchType').value
+  if (!query) { document.getElementById('searchResults').innerHTML = '<div class="empty-state"><p>Gib einen Suchbegriff ein</p></div>'; return }
 
-function switchSearchTab(type) {
-  searchType = type
-  document.querySelectorAll('#searchTabs .tab-btn').forEach(t => t.classList.remove('active'))
-  document.querySelector(`#searchTabs .tab-btn[onclick*="${type}"]`).classList.add('active')
-  doSearch()
-}
+  document.getElementById('searchResults').innerHTML = '<p class="text-muted text-sm" style="text-align:center;padding:20px">Suche...</p>'
 
-let searchTimeout
-document.getElementById('searchQuery').addEventListener('input', function() {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => doSearch(), 300)
-})
+  let endpoint = ''
+  if (type === 'posts') endpoint = `/posts/search?q=${encodeURIComponent(query)}`
+  else endpoint = `/search?q=${encodeURIComponent(query)}`
 
-async function doSearch() {
-  const q = document.getElementById('searchQuery').value.trim()
-  const resultsEl = document.getElementById('searchResults')
-
-  if (q.length < 2) {
-    resultsEl.innerHTML = '<div class="empty-state"><p>Gib mindestens 2 Zeichen ein</p></div>'
-    return
-  }
-
-  resultsEl.innerHTML = '<div style="text-align:center;padding:24px"><div class="skeleton" style="width:24px;height:24px;border-radius:50%;margin:0 auto"></div></div>'
-
-  try {
-    const data = await api(`/search?q=${encodeURIComponent(q)}&type=${searchType}&limit=20`)
-    const results = data.data
-
-    let html = ''
-
-    if (searchType === 'all' || searchType === 'users') {
-      if (results.users?.length > 0) {
-        if (searchType === 'all') html += '<h2 style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px">User</h2>'
-        results.users.forEach(u => {
-          html += `<a href="/profile.html?id=${u.id}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">${getAvatarHtml(u, 'md')}<span style="font-size:14px;color:white">${escapeHtml(u.name)}</span></a>`
-        })
-      } else if (searchType === 'users') {
-        html += '<div class="empty-state"><p>Keine User gefunden</p></div>'
-      }
+  api(endpoint).then(data => {
+    const el = document.getElementById('searchResults')
+    let items = data.data || []
+    if (items.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>Keine Ergebnisse</p></div>'
+      return
     }
 
-    if (searchType === 'all' || searchType === 'communities') {
-      if (results.communities?.length > 0) {
-        if (searchType === 'all') html += '<h2 style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px">Communities</h2>'
-        results.communities.forEach(c => {
-          html += `<a href="/community.html?slug=${c.slug}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3l-2 18"/><path d="M12 3l-1 18"/></svg>
-            <div style="min-width:0;flex:1"><div style="font-size:14px;color:white;font-weight:500">r/${escapeHtml(c.slug)}</div><div style="font-size:12px;color:var(--text-muted)">${c._count.members} Mitglieder · ${c._count.posts} Posts</div></div>
-          </a>`
-        })
-      } else if (searchType === 'communities') {
-        html += '<div class="empty-state"><p>Keine Communities gefunden</p></div>'
-      }
+    if (type === 'posts') {
+      el.innerHTML = items.map(p => createPostCard(p)).join('')
+    } else if (type === 'communities') {
+      el.innerHTML = items.map(c => `
+        <a href="/community.html?slug=${c.slug}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
+          <span class="community-icon-small" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;color:#fff">r/${escapeHtml(c.slug)}</div>
+            <div style="font-size:12px;color:#64748b">${c._count?.members || 0} Mitglieder</div>
+          </div>
+        </a>
+      `).join('')
+    } else if (type === 'users') {
+      el.innerHTML = items.map(u => `
+        <a href="/profile.html?id=${u.id}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
+          ${getAvatarHtml(u, 'sm')}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;color:#fff">${escapeHtml(u.name)}</div>
+            <div style="font-size:12px;color:#64748b">@${escapeHtml(u.username || '')}</div>
+          </div>
+        </a>
+      `).join('')
     }
-
-    if (searchType === 'all' || searchType === 'posts') {
-      if (results.posts?.length > 0) {
-        if (searchType === 'all') html += '<h2 style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px">Posts</h2>'
-        results.posts.forEach(p => {
-          html += `<a href="/post.html?id=${p.id}" style="display:block;padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-            <div style="font-size:14px;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.content)}</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeHtml(p.author.name)} · r/${escapeHtml(p.community.slug)}</div>
-          </a>`
-        })
-      } else if (searchType === 'posts') {
-        html += '<div class="empty-state"><p>Keine Posts gefunden</p></div>'
-      }
-    }
-
-    if (searchType === 'all' && !results.users?.length && !results.communities?.length && !results.posts?.length) {
-      html = '<div class="empty-state"><p>Nichts gefunden</p></div>'
-    }
-
-    resultsEl.innerHTML = html
-  } catch {
-    resultsEl.innerHTML = '<div class="empty-state"><p>Fehler bei der Suche</p></div>'
-  }
+  }).catch(() => {
+    document.getElementById('searchResults').innerHTML = '<div class="empty-state"><p>Fehler bei der Suche</p></div>'
+  })
 }
 
 function render() {
-  requireAuth()
   renderSidebar()
+  renderTopBarAvatar()
   renderRightPanel()
 }
 

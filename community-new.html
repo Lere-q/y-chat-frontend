@@ -8,87 +8,66 @@
 </head>
 <body>
 <div class="app-layout">
-  <nav class="sidebar" id="sidebar"></nav>
+  <div id="sidebar"></div>
+  <header class="top-bar">
+    <button class="menu-btn" onclick="toggleMobileSidebar()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <h1 class="page-title">Community erstellen</h1>
+    <div id="topBarAvatar"></div>
+  </header>
   <main class="main-content">
-    <div class="page-header">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <h1>Community erstellen</h1>
-    </div>
-    <div style="padding:16px;max-width:500px">
-      <form id="createForm" onsubmit="createCommunity(event)">
+    <div class="content-card" style="max-width:560px;margin:0 auto">
+      <form id="communityForm">
         <div class="form-group">
           <label for="name">Name</label>
-          <input id="name" type="text" class="form-input" placeholder="Z.B. Meine Community" required oninput="autoSlug(this.value)">
+          <input type="text" id="name" placeholder="z.B. Programmierer" required>
         </div>
         <div class="form-group">
-          <label for="slug">Slug (URL)</label>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">y-chat.dev/c/<span id="slugPreview" style="color:var(--primary)">mein-slug</span></div>
-          <input id="slug" type="text" class="form-input" placeholder="mein-slug" required>
+          <label for="slug">Slug</label>
+          <input type="text" id="slug" placeholder="z.B. programmieren" required>
+          <span class="text-muted text-sm">Wird in der URL angezeigt: /r/programmieren</span>
         </div>
         <div class="form-group">
           <label for="description">Beschreibung</label>
-          <textarea id="description" class="form-input" placeholder="Worum geht es in deiner Community?" rows="3"></textarea>
+          <textarea id="description" rows="3" placeholder="Worum geht's in dieser Community?"></textarea>
         </div>
-        <div class="form-group" style="display:flex;align-items:center;gap:12px">
-          <label class="toggle">
-            <input type="checkbox" id="isPrivate">
-            <span class="toggle-slider"></span>
-          </label>
-          <span style="font-size:14px;color:var(--text-muted)">Private Community</span>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block" id="createBtn">Community erstellen</button>
+        <div class="form-error hidden" id="formError"></div>
+        <button type="submit" class="btn btn-primary btn-full">Erstellen</button>
       </form>
     </div>
   </main>
   <aside class="right-panel" id="rightPanel"></aside>
 </div>
-
+<div id="mobileOverlay" class="modal-overlay hidden" onclick="toggleMobileSidebar()"></div>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
 <script src="js/layout.js"></script>
 <script>
-let slugEdited = false
-
-function autoSlug(value) {
-  if (!slugEdited) {
-    const slug = value.toLowerCase().replace(/[ä]/g,'ae').replace(/[ö]/g,'oe').replace(/[ü]/g,'ue').replace(/[ß]/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')
-    document.getElementById('slug').value = slug
-    document.getElementById('slugPreview').textContent = slug || 'mein-slug'
-  }
-}
-
-document.getElementById('slug').addEventListener('input', function() {
-  slugEdited = true
-  document.getElementById('slugPreview').textContent = this.value || 'mein-slug'
-})
-
-async function createCommunity(e) {
+document.getElementById('communityForm').addEventListener('submit', async (e) => {
   e.preventDefault()
   const name = document.getElementById('name').value
   const slug = document.getElementById('slug').value
   const description = document.getElementById('description').value
-  const isPrivate = document.getElementById('isPrivate').checked
-  const btn = document.getElementById('createBtn')
+  const errorEl = document.getElementById('formError')
+  const btn = e.target.querySelector('button[type="submit"]')
 
+  errorEl.classList.add('hidden')
   btn.disabled = true
-  btn.textContent = 'Erstelle...'
-
   try {
-    const data = await api('/communities', {
-      method: 'POST',
-      body: JSON.stringify({ name, slug, description, isPrivate }),
-    })
-    showToast('Community erstellt!')
-    window.location.href = `/community.html?slug=${data.data.slug}`
+    await api('/communities', { method: 'POST', body: JSON.stringify({ name, slug, description }) })
+    showToast('Community erstellt', 'success')
+    location.href = `/community.html?slug=${slug}`
   } catch (err) {
-    showToast(err.message, 'error')
-    btn.disabled = false
-    btn.textContent = 'Community erstellen'
+    errorEl.textContent = err.message
+    errorEl.classList.remove('hidden')
   }
-}
+  btn.disabled = false
+})
 
 function render() {
   renderSidebar()
+  renderTopBarAvatar()
   renderRightPanel()
 }
 

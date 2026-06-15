@@ -8,109 +8,90 @@
 </head>
 <body>
 <div class="app-layout">
-  <nav class="sidebar" id="sidebar"></nav>
-  <main class="main-content" id="mainContent">
-    <div id="loadingState" class="empty-state"><p>Laden...</p></div>
+  <div id="sidebar"></div>
+  <header class="top-bar">
+    <button class="menu-btn" onclick="toggleMobileSidebar()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Suchen..." onclick="location.href='/search.html'" readonly>
+      </div>
+    </div>
+    <div id="topBarAvatar"></div>
+  </header>
+  <main class="main-content">
+    <div id="postDetail"></div>
+    <div id="repliesContainer" style="margin-top:8px"></div>
   </main>
   <aside class="right-panel" id="rightPanel"></aside>
 </div>
-
+<div id="mobileOverlay" class="modal-overlay hidden" onclick="toggleMobileSidebar()"></div>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
 <script src="js/layout.js"></script>
 <script>
-const postId = new URLSearchParams(location.search).get('id')
+const params = new URLSearchParams(location.search)
+const postId = params.get('id')
 
 async function loadPost() {
-  if (!postId) { document.getElementById('mainContent').innerHTML = '<div class="empty-state"><p>Beitrag nicht gefunden</p></div>'; return }
-
+  if (!postId) { document.getElementById('postDetail').innerHTML = '<div class="empty-state"><p>Keine Beitrags-ID</p></div>'; return }
   try {
     const data = await api(`/posts/${postId}`)
     const post = data.data
-    const likedClass = post.isLiked ? 'liked' : ''
-    const repostedClass = post.isReposted ? 'reposted' : ''
-    const bookmarkedClass = post.isBookmarked ? 'bookmarked' : ''
+    document.title = `Beitrag von ${post.author.name} - Y-Chat`
+    document.getElementById('postDetail').innerHTML = createPostCard(post)
+    loadReplies()
+  } catch { document.getElementById('postDetail').innerHTML = '<div class="empty-state"><p>Beitrag nicht gefunden</p></div>' }
+}
 
-    let html = `
-      <div class="page-header">
-        <button onclick="history.back()" class="btn-ghost btn" style="padding:4px">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        </button>
-        <h1>Beitrag</h1>
-      </div>
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;gap:12px">
-          <a href="/profile.html?id=${post.author.id}">${getAvatarHtml(post.author, 'md')}</a>
-          <div style="flex:1;min-width:0">
-            <a href="/profile.html?id=${post.author.id}" class="post-author">${escapeHtml(post.author.name)}</a>
-            <a href="/community.html?slug=${post.community.slug}" class="post-community" style="display:block">r/${escapeHtml(post.community.slug)}</a>
-            <p style="color:#e2e8f0;font-size:14px;white-space:pre-wrap;margin-top:8px">${escapeHtml(post.content)}</p>
-            ${post.image ? `<img src="${escapeHtml(post.image)}" style="max-width:100%;border-radius:12px;margin-top:8px;cursor:pointer" onclick="window.open(this.src)">` : ''}
-            <p style="color:var(--text-muted);font-size:12px;margin-top:8px">${formatDate(post.createdAt)}</p>
-          </div>
-        </div>
-        <div style="display:flex;gap:24px;margin-top:12px;padding-top:8px;border-top:1px solid var(--border);color:var(--text-muted)">
-          <button class="post-action ${likedClass}" onclick="toggleLike('${post.id}', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>${post._count.likes}</span></button>
-          <button class="post-action ${repostedClass}" onclick="toggleRepost('${post.id}', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg><span>${post._count.reposts}</span></button>
-          <span class="post-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${post._count.replies}</span></span>
-          <button class="post-action ${bookmarkedClass}" onclick="toggleBookmark('${post.id}', this)" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
-        </div>
-      </div>
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;gap:8px">
-          <textarea id="replyContent" placeholder="Schreibe eine Antwort..." maxlength="280" rows="2" style="flex:1;background:var(--bg-elevated);color:var(--text-base);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:14px;outline:none;resize:none;font-family:inherit"></textarea>
-          <button class="btn btn-primary" onclick="submitReply()" style="align-self:flex-end">Antworten</button>
-        </div>
-      </div>
-      <div id="replies">
-    `
+async function loadReplies() {
+  if (!postId) return
+  const container = document.getElementById('repliesContainer')
+  try {
+    const data = await api(`/posts/${postId}/replies?limit=50`)
+    const replies = data.data || []
 
-    if (post.replies && post.replies.length > 0) {
-      post.replies.forEach(r => {
-        html += `
-          <div style="padding:12px 16px;border-bottom:1px solid rgba(51,65,85,0.5);display:flex;gap:12px">
-            <a href="/profile.html?id=${r.author.id}">${getAvatarHtml(r.author, 'md')}</a>
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:8px;font-size:14px">
-                <a href="/profile.html?id=${r.author.id}" style="font-weight:500;color:white;text-decoration:none">${escapeHtml(r.author.name)}</a>
-                <span style="color:var(--text-muted)">·</span>
-                <span style="color:var(--text-muted);font-size:12px">${formatDate(r.createdAt)}</span>
-              </div>
-              <p style="color:#e2e8f0;font-size:14px;white-space:pre-wrap;margin-top:4px">${escapeHtml(r.content)}</p>
-            </div>
-          </div>
-        `
-      })
+    let html = `<div class="content-card" style="padding:16px">
+      <h3 style="font-size:16px;font-weight:600;color:#fff;margin:0 0 12px">Antworten (${replies.length})</h3>`
+
+    if (replies.length === 0) {
+      html += '<p class="text-muted text-sm">Noch keine Antworten</p>'
     } else {
-      html += '<div class="empty-state"><p>Noch keine Antworten</p></div>'
+      html += replies.map(r => createPostCard(r)).join('')
     }
 
-    html += '</div>'
-    document.getElementById('mainContent').innerHTML = html
-  } catch (err) {
-    document.getElementById('mainContent').innerHTML = '<div class="empty-state"><p>Beitrag nicht gefunden</p></div>'
-  }
+    html += `<div style="margin-top:16px;display:flex;gap:12px">
+      <div id="replyAvatar"></div>
+      <div style="flex:1">
+        <textarea id="replyContent" placeholder="Antworten..." rows="2" style="width:100%;padding:12px;border-radius:8px;background:#0F172A;border:1px solid #334155;color:#F1F5F9;font-size:14px;resize:none"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-primary btn-sm" onclick="submitReply()">Antworten</button>
+        </div>
+      </div>
+    </div></div>`
+
+    container.innerHTML = html
+    const user = getUser()
+    if (user) document.getElementById('replyAvatar').innerHTML = getAvatarHtml(user, 'sm')
+  } catch { container.innerHTML = '' }
 }
 
 async function submitReply() {
   const content = document.getElementById('replyContent').value.trim()
   if (!content) return
-
   try {
-    await api(`/posts/${postId}/replies`, {
-      method: 'POST',
-      body: JSON.stringify({ content }),
-    })
+    await api(`/posts/${postId}/reply`, { method: 'POST', body: JSON.stringify({ content }) })
     document.getElementById('replyContent').value = ''
-    showToast('Antwort gesendet!')
-    loadPost()
-  } catch (err) {
-    showToast(err.message, 'error')
-  }
+    showToast('Antwort gesendet', 'success')
+    loadReplies()
+  } catch (err) { showToast(err.message, 'error') }
 }
 
 function render() {
   renderSidebar()
+  renderTopBarAvatar()
   renderRightPanel()
   loadPost()
 }
