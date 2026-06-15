@@ -31,7 +31,7 @@ async function loadBookmarks() {
   if (!getUser()) { el.innerHTML = '<div class="empty-state"><p>Bitte anmelden</p></div>'; return }
   try {
     const data = await api('/bookmarks?limit=50')
-    const posts = (data.data || []).map(b => b.post || b)
+    const posts = data.data || []
     if (posts.length === 0) {
       el.innerHTML = '<div class="empty-state"><p>Keine Lesezeichen</p></div>'
       return

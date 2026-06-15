@@ -42,11 +42,11 @@ let postImage = null
 async function loadCommunity() {
   if (!slug) { location.href='communities.html'; return }
   try {
-    const data = await api(`/communities/${slug}`)
+    const data = await api('/communities/' + slug)
     community = data.data
-    document.title = `r/${escapeHtml(community.slug)} - Y-Chat`
+    document.title = 'r/' + escapeHtml(community.slug) + ' - Y-Chat'
     renderHeader()
-    if (community.isMember) renderEditor()
+    if (community.isJoined) renderEditor()
     loadPosts()
   } catch { location.href='404.html' }
 }
@@ -55,22 +55,22 @@ function renderHeader() {
   const el = document.getElementById('communityHeader')
   el.innerHTML = `
     <div class="community-cover">
-      ${community.bannerImage ? `<img src="${community.bannerImage}" alt="">` : ''}
+      ${community.bannerImage ? '<img src="' + escapeHtml(community.bannerImage) + '" alt="">' : ''}
     </div>
     <div class="community-info-card" style="padding:16px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
         <div style="display:flex;align-items:center;gap:12px;min-width:0">
-          <span class="community-icon-large" style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:24px;font-weight:700;flex-shrink:0">${community.name[0]}</span>
+          <span class="community-icon-large">${escapeHtml(community.name[0])}</span>
           <div style="min-width:0">
-            <h1 style="font-size:20px;font-weight:700;color:#fff;margin:0">r/${escapeHtml(community.slug)}</h1>
-            <p style="font-size:13px;color:#64748b;margin:2px 0 0">${escapeHtml(community.name)} · ${community._count?.members || 0} Mitglieder</p>
+            <h1 style="font-size:20px;font-weight:700;color:#fff;margin:0">${escapeHtml(community.name)}</h1>
+            <p style="font-size:13px;color:#64748b;margin:2px 0 0">r/${escapeHtml(community.slug)} · ${community._count?.members || 0} Mitglieder</p>
           </div>
         </div>
-        <button class="btn ${community.isMember ? 'btn-outline' : 'btn-primary'} btn-sm" id="joinBtn" onclick="toggleJoin()">
-          ${community.isMember ? 'Beigetreten' : 'Beitreten'}
+        <button class="btn ${community.isJoined ? 'btn-outline' : 'btn-primary'} btn-sm" id="joinBtn" onclick="toggleJoin()">
+          ${community.isJoined ? 'Beigetreten' : 'Beitreten'}
         </button>
       </div>
-      ${community.description ? `<p style="font-size:14px;color:#94a3b8;margin-top:12px;line-height:1.4">${escapeHtml(community.description)}</p>` : ''}
+      ${community.description ? '<p style="font-size:14px;color:#94a3b8;margin-top:12px;line-height:1.4">' + escapeHtml(community.description) + '</p>' : ''}
     </div>
   `
 }
@@ -78,17 +78,14 @@ function renderHeader() {
 async function toggleJoin() {
   if (!community) return
   try {
-    const isMember = community.isMember
-    await api(`/communities/${slug}/join`, { method: isMember ? 'DELETE' : 'POST' })
-    community.isMember = !isMember
+    const wasJoined = community.isJoined
+    await api('/communities/' + slug + '/join', { method: wasJoined ? 'DELETE' : 'POST' })
+    community.isJoined = !wasJoined
     const btn = document.getElementById('joinBtn')
-    btn.textContent = community.isMember ? 'Beigetreten' : 'Beitreten'
-    btn.className = `btn ${community.isMember ? 'btn-outline' : 'btn-primary'} btn-sm`
-    if (community.isMember) renderEditor()
-    else {
-      const editor = document.getElementById('postEditorContainer')
-      if (editor) editor.innerHTML = ''
-    }
+    btn.textContent = community.isJoined ? 'Beigetreten' : 'Beitreten'
+    btn.className = 'btn ' + (community.isJoined ? 'btn-outline' : 'btn-primary') + ' btn-sm'
+    if (community.isJoined) renderEditor()
+    else { var editor = document.getElementById('postEditorContainer'); if (editor) editor.innerHTML = '' }
   } catch {}
 }
 
@@ -124,19 +121,15 @@ async function loadPosts() {
   if (loading || !hasMore) return
   loading = true
   const feedEl = document.getElementById('feed')
-  for (let i = 0; i < 3; i++) {
-    feedEl.insertAdjacentHTML('beforeend',
-      '<div class="post-card"><div class="post-card-inner"><div class="post-avatar"><div class="skeleton" style="width:36px;height:36px;border-radius:50%"></div></div><div class="post-body"><div class="skeleton skeleton-text" style="width:120px"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="width:75%"></div></div></div></div>')
-  }
+  feedEl.innerHTML = ''
   try {
-    const params = new URLSearchParams({ community: slug, limit: '20' })
+    const params = new URLSearchParams({ communitySlug: slug, limit: '20' })
     if (cursor) params.set('cursor', cursor)
-    const data = await api(`/posts?${params}`)
-    feedEl.innerHTML = ''
+    const data = await api('/posts?' + params.toString())
     if (data.data.length === 0) {
       feedEl.innerHTML = '<div class="empty-state"><p>Noch keine Beiträge in dieser Community</p></div>'
     } else {
-      data.data.forEach(p => feedEl.insertAdjacentHTML('beforeend', createPostCard(p)))
+      data.data.forEach(function(p) { feedEl.insertAdjacentHTML('beforeend', createPostCard(p)) })
     }
     cursor = data.nextCursor
     hasMore = !!data.nextCursor
@@ -146,18 +139,19 @@ async function loadPosts() {
   loading = false
 }
 
-function handleImageUpload(input) {
+async function handleImageUpload(input) {
   const file = input.files?.[0]
   if (!file) return
   if (file.size > 5 * 1024 * 1024) { showToast('Bild zu groß (max 5 MB)', 'error'); return }
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    postImage = e.target.result
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const data = await api('/upload', { method: 'POST', body: formData })
+    postImage = data.data.url
     const preview = document.getElementById('imagePreview')
-    preview.innerHTML = `<img src="${postImage}" alt=""><button onclick="removeImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`
+    preview.innerHTML = '<img src="' + escapeHtml(postImage) + '" alt=""><button onclick="removeImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
     preview.classList.remove('hidden')
-  }
-  reader.readAsDataURL(file)
+  } catch { showToast('Upload fehlgeschlagen', 'error') }
 }
 
 function removeImage() { postImage = null; document.getElementById('imagePreview').classList.add('hidden') }
@@ -169,19 +163,12 @@ async function submitPost() {
   const btn = document.getElementById('postBtn')
   btn.disabled = true
   try {
-    const body = { content, communityId: community.id }
-    if (postImage) {
-      if (postImage.startsWith('data:')) {
-        const blob = await fetch(postImage).then(r => r.blob())
-        const fd = new FormData()
-        fd.append('file', blob)
-        const uploadRes = await api('/upload', { method: 'POST', body: fd })
-        body.image = uploadRes.data.url
-      } else { body.image = postImage }
-    }
+    const body = { content: content, communityId: community.id }
+    if (postImage) body.image = postImage
     await api('/posts', { method: 'POST', body: JSON.stringify(body) })
     document.getElementById('postContent').value = ''
-    document.getElementById('charCount').textContent = '280'
+    var counter = document.getElementById('charCount')
+    if (counter) counter.textContent = '280'
     removeImage()
     showToast('Beitrag erstellt', 'success')
     cursor = null; hasMore = true; document.getElementById('feed').innerHTML = ''; loadPosts()
@@ -194,10 +181,12 @@ function autoResize(el) {
   el.style.height = el.scrollHeight + 'px'
   const len = el.value.length
   const counter = document.getElementById('charCount')
-  counter.textContent = 280 - len
-  counter.className = 'char-count'
-  if (len > 260) counter.classList.add('near-limit')
-  if (len > 280) counter.classList.add('over-limit')
+  if (counter) {
+    counter.textContent = 280 - len
+    counter.className = 'char-count'
+    if (len > 260) counter.classList.add('near-limit')
+    if (len > 280) counter.classList.add('over-limit')
+  }
 }
 
 function render() {

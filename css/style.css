@@ -76,6 +76,19 @@ input, textarea, select { font-family: inherit; }
 }
 
 .sidebar.collapsed { width: 60px; }
+.sidebar.collapsed .sidebar-section-label,
+.sidebar.collapsed .nav-link span,
+.sidebar.collapsed .community-link span,
+.sidebar.collapsed .view-all-link,
+.sidebar.collapsed .user-card .user-name,
+.sidebar.collapsed .settings-link span,
+.sidebar.collapsed .sidebar-header .logo-chat { display: none; }
+.sidebar.collapsed .sidebar-header { justify-content: center; padding: 0; }
+.sidebar.collapsed .nav-link { justify-content: center; padding: 10px 0; }
+.sidebar.collapsed .community-link { justify-content: center; padding: 8px 0; }
+.sidebar.collapsed .settings-link { justify-content: center; padding: 8px 0; }
+.sidebar.collapsed .user-card { flex-direction: column; align-items: center; }
+.sidebar.collapsed .logout-btn { margin-top: 4px; }
 
 .sidebar-header {
   display: flex;
@@ -232,7 +245,9 @@ input, textarea, select { font-family: inherit; }
   padding: 4px;
   transition: color 0.15s;
 }
-.lg\\:flex .collapse-btn { display: flex; }
+@media (min-width: 1024px) {
+  .collapse-btn { display: flex; }
+}
 .collapse-btn:hover { color: #fff; }
 
 /* Mobile sidebar overlay */
@@ -788,6 +803,38 @@ input, textarea, select { font-family: inherit; }
 }
 
 .hidden { display: none !important; }
+
+/* ===================== */
+/* TOGGLE SWITCH         */
+/* ===================== */
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  width: 36px;
+  height: 20px;
+  background: #334155;
+  border-radius: 999px;
+  transition: background 0.2s;
+  position: relative;
+}
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: #6366f1; }
+.toggle input:checked + .toggle-slider::after { transform: translateX(16px); }
 
 /* ===================== */
 /* SEARCH BOX            */

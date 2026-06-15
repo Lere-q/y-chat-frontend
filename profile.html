@@ -50,19 +50,21 @@ async function loadProfile() {
   }
 
   try {
-    let data
-    try { data = await api(`/users/${profileId}`); profile = data.data } catch {}
-    if (!profile) {
-      const user = getUser()
-      if (user && user.id === profileId) { profile = user }
-      else { document.getElementById('profileHeader').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'; return }
+    const data = await api('/users/' + profileId)
+    profile = data.data
+  } catch {}
+  if (!profile) {
+    const user = getUser()
+    if (user && user.id === profileId) {
+      profile = user
+      profile._count = profile._count || { posts: 0, followers: 0, following: 0, memberships: 0 }
+    } else {
+      document.getElementById('profileHeader').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'; return
     }
-    document.title = `${escapeHtml(profile.name)} - Y-Chat`
-    renderProfile(profile)
-    loadTabContent('posts')
-  } catch {
-    document.getElementById('profileHeader').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'
   }
+  document.title = escapeHtml(profile.name) + ' - Y-Chat'
+  renderProfile(profile)
+  loadTabContent('posts')
 }
 
 function renderProfile(p) {
@@ -125,7 +127,7 @@ async function loadTabContent(tab) {
       const posts = data.data || []
       el.innerHTML = posts.length ? posts.map(p => createPostCard(p)).join('') : '<div class="empty-state"><p>Noch keine Beiträge</p></div>'
     } else if (tab === 'liked') {
-      data = await api(`/users/${profile.id}/likes`)
+      data = await api('/users/' + profile.id + '/likes')
       const posts = data.data || []
       el.innerHTML = posts.length ? posts.map(p => createPostCard(p)).join('') : '<div class="empty-state"><p>Keine gelikten Beiträge</p></div>'
     } else if (tab === 'communities') {

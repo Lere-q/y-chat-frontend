@@ -20,15 +20,16 @@
     <div class="content-card">
       <div class="search-box" style="margin-bottom:16px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="searchInput" placeholder="Suche nach Beiträgen, Communities..." onkeydown="if(event.key==='Enter')search()">
+        <input type="text" id="searchInput" placeholder="Suchen..." onkeydown="if(event.key==='Enter')search()">
       </div>
       <div style="display:flex;border-bottom:2px solid #1e293b;margin-bottom:16px">
-        <button class="tab-btn active" data-type="posts" onclick="switchSearchType('posts')">Beiträge</button>
-        <button class="tab-btn" data-type="users" onclick="switchSearchType('users')">Benutzer</button>
+        <button class="tab-btn active" data-type="all" onclick="switchSearchType('all')">Alle</button>
+        <button class="tab-btn" data-type="users" onclick="switchSearchType('users')">User</button>
         <button class="tab-btn" data-type="communities" onclick="switchSearchType('communities')">Communities</button>
+        <button class="tab-btn" data-type="posts" onclick="switchSearchType('posts')">Posts</button>
       </div>
       <div id="searchResults">
-        <div class="empty-state"><p>Gib einen Suchbegriff ein</p></div>
+        <div class="empty-state"><p>Gib mindestens 2 Zeichen ein</p></div>
       </div>
     </div>
   </main>
@@ -39,58 +40,74 @@
 <script src="js/app.js"></script>
 <script src="js/layout.js"></script>
 <script>
-let searchType = 'posts'
+let searchType = 'all'
 
 function switchSearchType(type) {
   searchType = type
-  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'))
-  document.querySelector(`.tab-btn[data-type="${type}"]`).classList.add('active')
+  document.querySelectorAll('.tab-btn').forEach(function(t) { t.classList.remove('active') })
+  document.querySelector('.tab-btn[data-type="' + type + '"]').classList.add('active')
   search()
 }
 
 function search() {
   const query = document.getElementById('searchInput').value.trim()
-  if (!query) { document.getElementById('searchResults').innerHTML = '<div class="empty-state"><p>Gib einen Suchbegriff ein</p></div>'; return }
-
-  document.getElementById('searchResults').innerHTML = '<p class="text-muted text-sm" style="text-align:center;padding:20px">Suche...</p>'
-
-  let endpoint = ''
-  if (searchType === 'posts') endpoint = `/posts/search?q=${encodeURIComponent(query)}`
-  else endpoint = `/search?q=${encodeURIComponent(query)}&type=${searchType}`
-
-  api(endpoint).then(data => {
-    const el = document.getElementById('searchResults')
-    let items = data.data || []
-    if (items.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>Keine Ergebnisse</p></div>'
+  const el = document.getElementById('searchResults')
+  if (query.length < 2) {
+    el.innerHTML = '<div class="empty-state"><p>Gib mindestens 2 Zeichen ein</p></div>'
+    return
+  }
+  el.innerHTML = '<p class="text-muted text-sm" style="text-align:center;padding:20px">Suche...</p>'
+  api('/search?q=' + encodeURIComponent(query) + '&type=' + searchType + '&limit=20').then(function(data) {
+    const d = data.data || {}
+    var users = d.users || [], communities = d.communities || [], posts = d.posts || []
+    if (searchType === 'all' && users.length === 0 && communities.length === 0 && posts.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>Nichts gefunden für "' + escapeHtml(query) + '"</p></div>'
       return
     }
-
-    if (searchType === 'posts') {
-      el.innerHTML = items.map(p => createPostCard(p)).join('')
-    } else if (searchType === 'communities') {
-      el.innerHTML = items.map(c => `
-        <a href="community.html?slug=${c.slug}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
-          <span style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;color:#fff">r/${escapeHtml(c.slug)}</div>
-            <div style="font-size:12px;color:#64748b">${c._count?.members || 0} Mitglieder</div>
-          </div>
-        </a>
-      `).join('')
-    } else if (searchType === 'users') {
-      el.innerHTML = items.map(u => `
-        <a href="profile.html?id=${u.id}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
-          ${getAvatarHtml(u, 'md')}
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:500;color:#fff">${escapeHtml(u.name)}</div>
-            <div style="font-size:12px;color:#64748b;margin-top:2px">@${escapeHtml(u.username || '')}</div>
-          </div>
-        </a>
-      `).join('')
+    var html = ''
+    if (searchType === 'all' || searchType === 'users') {
+      if (users.length > 0) {
+        if (searchType === 'all') html += '<h3 class="text-sm text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">User</h3>'
+        users.forEach(function(u) {
+          html += '<a href="profile.html?id=' + u.id + '" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">' +
+            getAvatarHtml(u, 'md') +
+            '<span style="font-weight:500;color:#fff">' + escapeHtml(u.name) + '</span></a>'
+        })
+      } else if (searchType === 'users') {
+        html += '<div class="empty-state"><p>Keine User gefunden für "' + escapeHtml(query) + '"</p></div>'
+      }
     }
-  }).catch(() => {
-    document.getElementById('searchResults').innerHTML = '<div class="empty-state"><p>Fehler bei der Suche</p></div>'
+    if (searchType === 'all' || searchType === 'communities') {
+      if (communities.length > 0) {
+        if (searchType === 'all') html += '<h3 class="text-sm text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px">Communities</h3>'
+        communities.forEach(function(c) {
+          html += '<a href="community.html?slug=' + c.slug + '" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">' +
+            '<span style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:700;flex-shrink:0">' + escapeHtml(c.name[0]) + '</span>' +
+            '<div style="flex:1;min-width:0"><div style="font-weight:500;color:#fff">r/' + escapeHtml(c.slug) + '</div>' +
+            '<div style="font-size:12px;color:#64748b;margin-top:1px">' + (c._count?.members || 0) + ' Mitglieder · ' + (c._count?.posts || 0) + ' Posts</div></div></a>'
+        })
+      } else if (searchType === 'communities') {
+        html += '<div class="empty-state"><p>Keine Communities gefunden für "' + escapeHtml(query) + '"</p></div>'
+      }
+    }
+    if (searchType === 'all' || searchType === 'posts') {
+      if (posts.length > 0) {
+        if (searchType === 'all') html += '<h3 class="text-sm text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px">Posts</h3>'
+        posts.forEach(function(p) {
+          html += '<a href="post.html?id=' + p.id + '" style="display:block;padding:10px 12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">' +
+            '<div class="text-sm" style="color:#e2e8f0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + escapeHtml(p.content) + '</div>' +
+            '<div style="font-size:12px;color:#64748b;margin-top:4px;display:flex;gap:8px">' +
+            '<span>' + escapeHtml(p.author?.name || '') + '</span>' +
+            (p.community ? '<span>· r/' + escapeHtml(p.community.slug) + '</span>' : '') +
+            '</div></a>'
+        })
+      } else if (searchType === 'posts') {
+        html += '<div class="empty-state"><p>Keine Posts gefunden für "' + escapeHtml(query) + '"</p></div>'
+      }
+    }
+    el.innerHTML = html
+  }).catch(function() {
+    el.innerHTML = '<div class="empty-state"><p>Fehler bei der Suche</p></div>'
   })
 }
 

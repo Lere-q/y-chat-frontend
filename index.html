@@ -195,7 +195,11 @@ function render() {
   renderSidebar()
   renderTopBarAvatar()
   renderRightPanel()
-  loadJoinedCommunities()
+  if (!getUser()) {
+    document.getElementById('postEditor').classList.add('hidden')
+  } else {
+    loadJoinedCommunities()
+  }
   loadPosts()
   setupInfiniteScroll()
 }

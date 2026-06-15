@@ -26,10 +26,6 @@
         <input type="email" id="email" placeholder="name@beispiel.de" required>
       </div>
       <div class="form-group">
-        <label for="username">Benutzername</label>
-        <input type="text" id="username" placeholder="benutzername" required>
-      </div>
-      <div class="form-group">
         <label for="password">Passwort</label>
         <input type="password" id="password" placeholder="••••••••" required>
       </div>
@@ -47,28 +43,37 @@
 </div>
 <script src="js/api.js"></script>
 <script>
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
-  e.preventDefault()
+function validateRegistration() {
   const name = document.getElementById('name').value
   const email = document.getElementById('email').value
-  const username = document.getElementById('username').value
   const password = document.getElementById('password').value
   const passwordConfirm = document.getElementById('passwordConfirm').value
-  const errorEl = document.getElementById('formError')
-  const btn = e.target.querySelector('button[type="submit"]')
+  if (name.length < 2) return 'Name muss mindestens 2 Zeichen haben'
+  if (!email.includes('@')) return 'Ungültige E-Mail-Adresse'
+  if (password.length < 8) return 'Passwort muss mindestens 8 Zeichen haben'
+  if (password !== passwordConfirm) return 'Passwörter stimmen nicht überein'
+  return null
+}
 
-  if (password !== passwordConfirm) {
-    errorEl.textContent = 'Passwörter stimmen nicht überein'
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const errorEl = document.getElementById('formError')
+  const validationError = validateRegistration()
+  if (validationError) {
+    errorEl.textContent = validationError
     errorEl.classList.remove('hidden')
     return
   }
-
+  const name = document.getElementById('name').value
+  const email = document.getElementById('email').value
+  const password = document.getElementById('password').value
+  const btn = e.target.querySelector('button[type="submit"]')
   errorEl.classList.add('hidden')
   btn.disabled = true
   try {
-    const data = await api('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, username, password }) })
-    localStorage.setItem('token', data.data.token)
-    localStorage.setItem('user', JSON.stringify(data.data.user))
+    const data = await api('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) })
+    localStorage.setItem('y-chat-token', data.data.token)
+    localStorage.setItem('y-chat-user', JSON.stringify(data.data.user))
     location.href = '.'
   } catch (err) {
     errorEl.textContent = err.message

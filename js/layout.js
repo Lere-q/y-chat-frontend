@@ -16,10 +16,10 @@ function renderSidebar() {
   if (sidebarCollapsed) sidebar.classList.add('collapsed')
 
   let html = `
-    <div class="sidebar-header">
-      <a href="." class="sidebar-brand" style="display:flex;align-items:center;gap:2px;text-decoration:none">
+    <div class="sidebar-header" style="justify-content:${sidebarCollapsed ? 'center' : 'flex-start'}">
+      <a href="." style="display:flex;align-items:center;gap:2px;text-decoration:none">
         <span class="logo-y logo-text">Y</span>
-        <span class="logo-chat logo-text">Chat</span>
+        ${sidebarCollapsed ? '' : '<span class="logo-chat logo-text">Chat</span>'}
       </a>
     </div>
     <nav class="sidebar-nav">
@@ -70,7 +70,7 @@ function renderSidebar() {
 
       const viewAll = document.createElement('a')
       viewAll.setAttribute('data-dynamic', '')
-      viewAll.href = '/communities.html'
+      viewAll.href = 'communities.html'
       viewAll.className = 'view-all-link'
       viewAll.textContent = 'Alle anzeigen'
       sidebarNav.appendChild(viewAll)
@@ -135,7 +135,7 @@ function renderTopBarAvatar() {
 
 async function loadCommunitiesForSidebar() {
   try {
-    const data = await api('/communities?limit=3')
+    const data = await api('/communities?joined=true&limit=3')
     return data.data || []
   } catch { return [] }
 }
@@ -194,19 +194,6 @@ function renderRightPanel() {
     `).join('')
   }).catch(() => {})
 
-  // Online users
-  api('/users/online').then(data => {
-    const onlineEl = document.getElementById('onlineUsers')
-    const users = (data.data || []).slice(0, 8)
-    if (users.length === 0) {
-      onlineEl.innerHTML = '<p class="text-sm text-muted">Keine User online</p>'
-      return
-    }
-    onlineEl.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-      users.map(u => `<div style="position:relative;display:inline-flex" title="${escapeHtml(u.name)}">
-        ${getAvatarHtml(u, 'sm')}
-        <span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;background:#22c55e;border-radius:50%;border:2px solid #0f172a"></span>
-      </div>`).join('') +
-      '</div>'
-  }).catch(() => {})
+  // Online users placeholder (original uses Socket.IO presence)
+  document.getElementById('onlineUsers').innerHTML = '<p class="text-sm text-muted">Keine User online</p>'
 }
