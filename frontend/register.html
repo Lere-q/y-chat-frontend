@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registrieren - Y-Chat</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>Registrieren</h1>
+    <div id="errorBox" class="error-box hidden"></div>
+    <form id="registerForm">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input id="name" type="text" class="form-input" placeholder="Dein Name" required>
+      </div>
+      <div class="form-group">
+        <label for="email">E-Mail</label>
+        <input id="email" type="email" class="form-input" placeholder="deine@email.de" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Passwort</label>
+        <input id="password" type="password" class="form-input" placeholder="••••••••" required minlength="8">
+      </div>
+      <div class="form-group">
+        <label for="passwordConfirm">Passwort wiederholen</label>
+        <input id="passwordConfirm" type="password" class="form-input" placeholder="••••••••" required minlength="8">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="registerBtn">Registrieren</button>
+    </form>
+    <p style="text-align:center;margin-top:24px;font-size:14px;color:var(--text-muted)">
+      Bereits ein Konto? <a href="/login.html">Anmelden</a>
+    </p>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const name = document.getElementById('name').value
+  const email = document.getElementById('email').value
+  const password = document.getElementById('password').value
+  const passwordConfirm = document.getElementById('passwordConfirm').value
+  const btn = document.getElementById('registerBtn')
+  const errorBox = document.getElementById('errorBox')
+
+  errorBox.classList.add('hidden')
+
+  if (password !== passwordConfirm) {
+    errorBox.textContent = 'Passwörter stimmen nicht überein'
+    errorBox.classList.remove('hidden')
+    return
+  }
+
+  btn.disabled = true
+  btn.textContent = 'Wird registriert...'
+
+  try {
+    const data = await api('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password }),
+    })
+    setToken(data.data.token)
+    setUser(data.data)
+    window.location.href = '/'
+  } catch (err) {
+    errorBox.textContent = err.message || 'Registrierung fehlgeschlagen'
+    errorBox.classList.remove('hidden')
+  }
+
+  btn.disabled = false
+  btn.textContent = 'Registrieren'
+})
+</script>
+</body>
+</html>

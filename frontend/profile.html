@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profil - Y-Chat</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main-content" id="mainContent">
+    <div id="loadingState" class="empty-state"><p>Laden...</p></div>
+  </main>
+  <aside class="right-panel" id="rightPanel"></aside>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/layout.js"></script>
+<script>
+const profileId = new URLSearchParams(location.search).get('id')
+let currentTab = 'posts'
+
+async function loadProfile() {
+  const userId = profileId || getUser()?.id
+  if (!userId) { window.location.href = '/login.html'; return }
+
+  try {
+    const [profileData, postsData] = await Promise.all([
+      api(`/users/${userId}`),
+      api(`/users/${userId}/posts`),
+    ])
+
+    const profile = profileData.data
+    const posts = postsData.data || []
+
+    let html = `
+      <div class="profile-header">
+        ${getAvatarHtml(profile, 'xl')}
+        <div class="profile-info">
+          <h2>${escapeHtml(profile.name)}</h2>
+          ${profile.bio ? `<div class="profile-bio">${escapeHtml(profile.bio)}</div>` : ''}
+          <div class="profile-stats">
+            <span><strong>${profile._count.posts}</strong> Beiträge</span>
+            <span><strong>${profile._count.followers}</strong> Follower</span>
+            <span><strong>${profile._count.following}</strong> Folgt</span>
+          </div>
+          ${!profile.isOwnProfile ? `
+            <button class="btn ${profile.isFollowing ? 'btn-ghost' : 'btn-primary'}" style="margin-top:12px" onclick="toggleFollow('${profile.id}')" id="followBtn">
+              ${profile.isFollowing ? 'Folgen' : 'Folgen'}
+            </button>
+          ` : `
+            <a href="/settings.html" class="btn btn-ghost" style="margin-top:12px;display:inline-flex">Einstellungen</a>
+          `}
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('posts')">Beiträge</button>
+        <button class="tab-btn" onclick="switchTab('liked')">Gefällt mir</button>
+      </div>
+      <div id="postsContainer">
+    `
+
+    if (posts.length === 0) {
+      html += '<div class="empty-state"><p>Noch keine Beiträge</p></div>'
+    } else {
+      html += posts.map(p => createPostCard(p)).join('')
+    }
+
+    html += '</div></div>'
+    document.getElementById('mainContent').innerHTML = html
+  } catch (err) {
+    document.getElementById('mainContent').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'
+  }
+}
+
+async function switchTab(tab) {
+  currentTab = tab
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'))
+  document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active')
+
+  const userId = profileId || getUser()?.id
+  const container = document.getElementById('postsContainer')
+
+  try {
+    const endpoint = tab === 'liked' ? `/users/${userId}/likes` : `/users/${userId}/posts`
+    const data = await api(endpoint)
+    const posts = data.data || []
+
+    if (posts.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Keine Beiträge</p></div>'
+    } else {
+      container.innerHTML = posts.map(p => createPostCard(p)).join('')
+    }
+  } catch {
+    container.innerHTML = '<div class="empty-state"><p>Fehler beim Laden</p></div>'
+  }
+}
+
+async function toggleFollow(userId) {
+  const btn = document.getElementById('followBtn')
+  try {
+    if (btn.textContent === 'Folgen') {
+      await api(`/users/${userId}/follow`, { method: 'POST' })
+    } else {
+      await api(`/users/${userId}/follow`, { method: 'DELETE' })
+    }
+    loadProfile()
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
+
+function render() {
+  requireAuth()
+  renderSidebar()
+  renderRightPanel()
+  loadProfile()
+}
+
+document.addEventListener('DOMContentLoaded', render)
+</script>
+</body>
+</html>

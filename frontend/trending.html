@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trending - Y-Chat</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main-content">
+    <div class="page-header">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      <h1>Trending Communities</h1>
+    </div>
+    <div id="trendingList"></div>
+  </main>
+  <aside class="right-panel" id="rightPanel"></aside>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/layout.js"></script>
+<script>
+async function loadTrending() {
+  const el = document.getElementById('trendingList')
+
+  for (let i = 0; i < 5; i++) {
+    el.innerHTML += `
+      <div class="trending-item" style="cursor:default">
+        <div class="trending-rank">${i + 1}</div>
+        <div class="skeleton skeleton-circle" style="width:40px;height:40px"></div>
+        <div style="flex:1"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text-sm"></div></div>
+      </div>
+    `
+  }
+
+  try {
+    const data = await api('/trending')
+    const communities = data.data || []
+    const iconColors = ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6', '#ef4444', '#22c55e', '#3b82f6']
+
+    el.innerHTML = communities.map((c, i) => {
+      const color = iconColors[c.name.length % iconColors.length]
+      return `
+        <a href="/community.html?slug=${c.slug}" class="trending-item" style="text-decoration:none;color:inherit">
+          <div class="trending-rank">${i + 1}</div>
+          <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:16px">${c.name[0]}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500;color:white;truncate">${escapeHtml(c.name)}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
+              <span>📝 ${c.postCount} Posts heute</span>
+              <span style="margin-left:12px">👥 ${c.memberCount} Mitglieder</span>
+            </div>
+          </div>
+        </a>
+      `
+    }).join('')
+  } catch {
+    el.innerHTML = '<div class="empty-state"><p>Fehler beim Laden</p></div>'
+  }
+}
+
+function render() {
+  renderSidebar()
+  renderRightPanel()
+  loadTrending()
+}
+
+document.addEventListener('DOMContentLoaded', render)
+</script>
+</body>
+</html>

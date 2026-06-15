@@ -1,0 +1,19 @@
+{
+  "name": "y-chat-backend",
+  "version": "1.0.0",
+  "main": "main.js",
+  "dependencies": {
+    "@prisma/client": "^5",
+    "bcryptjs": "^2",
+    "cors": "^2",
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "jsonwebtoken": "^9",
+    "multer": "^1",
+    "socket.io": "^4",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "prisma": "^5"
+  }
+}

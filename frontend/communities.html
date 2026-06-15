@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Communities - Y-Chat</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main-content">
+    <div class="page-header">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <h1>Communities</h1>
+    </div>
+    <div style="padding:16px">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Communities durchsuchen..." oninput="searchCommunities(this.value)">
+      </div>
+      <div class="community-grid" id="communityGrid"></div>
+      <div id="loadingState" class="hidden">
+        <div class="community-grid">
+          ${[1,2,3,4,5,6].map(() => `<div class="community-card"><div class="skeleton" style="width:48px;height:48px;border-radius:50%;margin-bottom:12px"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="width:80%"></div><div style="height:32px"></div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </main>
+  <aside class="right-panel" id="rightPanel"></aside>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/layout.js"></script>
+<script>
+let communities = []
+
+async function loadCommunities(search = '') {
+  document.getElementById('loadingState').classList.remove('hidden')
+  document.getElementById('communityGrid').innerHTML = ''
+
+  try {
+    const params = new URLSearchParams({ limit: '50' })
+    if (search) params.set('search', search)
+    const data = await api(`/communities?${params}`)
+    communities = data.data || []
+    renderCommunities()
+  } catch (err) {
+    document.getElementById('communityGrid').innerHTML = '<div class="empty-state"><p>Fehler beim Laden</p></div>'
+  }
+
+  document.getElementById('loadingState').classList.add('hidden')
+}
+
+function renderCommunities() {
+  const grid = document.getElementById('communityGrid')
+  if (communities.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><p>Keine Communities gefunden</p></div>'
+    return
+  }
+
+  grid.innerHTML = communities.map(c => {
+    const iconColors = ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6', '#ef4444', '#22c55e', '#3b82f6']
+    const color = iconColors[c.name.length % iconColors.length]
+    return `
+      <div class="community-card">
+        <div class="community-icon" style="background:${color}">${c.name[0]}</div>
+        <h3>${escapeHtml(c.name)}</h3>
+        <p>${escapeHtml(c.description || 'Keine Beschreibung')}</p>
+        <div class="community-stats">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            ${c._count.members}
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            ${c._count.posts}
+          </span>
+        </div>
+        <button class="btn ${c.isJoined ? 'btn-ghost' : 'btn-primary'} btn-block" onclick="toggleJoinCommunity('${c.slug}', this)">
+          ${c.isJoined ? 'Beitreten' : 'Beitreten'}
+        </button>
+      </div>
+    `
+  }).join('')
+}
+
+async function toggleJoinCommunity(slug, btn) {
+  const isJoined = btn.textContent === 'Beitreten'
+  try {
+    if (isJoined) {
+      await api(`/communities/${slug}/join`, { method: 'POST' })
+      showToast('Community beigetreten!')
+    } else {
+      await api(`/communities/${slug}/join`, { method: 'DELETE' })
+      showToast('Community verlassen')
+    }
+    btn.textContent = isJoined ? 'Beitreten' : 'Beitreten'
+    btn.className = `btn btn-block ${isJoined ? 'btn-ghost' : 'btn-primary'}`
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
+
+let searchTimeout
+function searchCommunities(value) {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => loadCommunities(value), 300)
+}
+
+function render() {
+  renderSidebar()
+  renderRightPanel()
+  loadCommunities()
+}
+
+document.addEventListener('DOMContentLoaded', render)
+</script>
+</body>
+</html>

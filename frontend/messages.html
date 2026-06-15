@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messages - Y-Chat</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.chat-view { display:flex;flex:1;overflow:hidden }
+@media (max-width:768px) { .conv-sidebar { display:none } }
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main-content" style="display:flex;flex-direction:column;padding:0">
+    <div class="messages-layout" id="messagesLayout">
+      <div class="conversation-list" id="conversationList">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <h1 style="font-size:18px;font-weight:700">Messages</h1>
+          </div>
+        </div>
+        <div id="convItems"></div>
+      </div>
+      <div class="chat-window" id="chatWindow">
+        <div class="empty-state" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#475569;margin-bottom:12px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <p>Wähle eine Konversation</p>
+        </div>
+      </div>
+    </div>
+  </main>
+  <aside class="right-panel" id="rightPanel"></aside>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/layout.js"></script>
+<script>
+let conversations = []
+let activeConvId = null
+let socket = null
+let onlineUsers = []
+
+async function loadConversations() {
+  try {
+    const data = await api('/conversations')
+    conversations = data.data || []
+    renderConversations()
+  } catch (err) {
+    document.getElementById('convItems').innerHTML = '<div class="empty-state"><p>Fehler beim Laden</p></div>'
+  }
+}
+
+function renderConversations() {
+  const el = document.getElementById('convItems')
+  if (conversations.length === 0) {
+    el.innerHTML = '<div class="empty-state"><p>Keine Konversationen</p></div>'
+    return
+  }
+
+  el.innerHTML = conversations.map(c => `
+    <button class="conversation-item ${c.id === activeConvId ? 'active' : ''}" onclick="openConversation('${c.id}')">
+      ${getAvatarHtml(c.participant, 'sm')}
+      <div class="conversation-info">
+        <div class="conversation-name">${escapeHtml(c.participant.name)}</div>
+        <div class="conversation-preview">${c.lastMessage ? escapeHtml(c.lastMessage.content) : ''}</div>
+      </div>
+    </button>
+  `).join('')
+}
+
+async function openConversation(convId) {
+  activeConvId = convId
+  renderConversations()
+
+  const conv = conversations.find(c => c.id === convId)
+  if (!conv) return
+
+  const chatWindow = document.getElementById('chatWindow')
+  const isOnline = onlineUsers.includes(conv.participant.id)
+
+  chatWindow.innerHTML = `
+    <div class="chat-header">
+      ${getAvatarHtml(conv.participant, 'md')}
+      <div>
+        <div style="font-weight:500;font-size:14px">${escapeHtml(conv.participant.name)}</div>
+        <div style="font-size:11px;color:var(--text-muted)">
+          <span class="${isOnline ? 'online-dot' : 'offline-dot'}"></span>
+          ${isOnline ? 'Online' : 'Offline'}
+        </div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-area">
+      <input type="text" id="messageInput" placeholder="Nachricht schreiben..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="btn btn-primary" onclick="sendMessage()" style="border-radius:50%;width:40px;height:40px;padding:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  `
+
+  loadMessages(convId)
+}
+
+async function loadMessages(convId) {
+  try {
+    const data = await api(`/conversations/${convId}/messages`)
+    const messagesEl = document.getElementById('chatMessages')
+    messagesEl.innerHTML = data.data.map(m => {
+      const userId = getUser()?.id
+      const isSelf = m.sender.id === userId
+      return `
+        <div class="message ${isSelf ? 'message-self' : 'message-other'}">
+          ${m.content}
+          <div class="message-time">${formatDate(m.createdAt)}</div>
+        </div>
+      `
+    }).join('')
+    messagesEl.scrollTop = messagesEl.scrollHeight
+  } catch (err) {
+    document.getElementById('chatMessages').innerHTML = '<div class="empty-state"><p>Fehler beim Laden</p></div>'
+  }
+}
+
+async function sendMessage() {
+  const input = document.getElementById('messageInput')
+  const content = input.value.trim()
+  if (!content || !activeConvId) return
+
+  input.value = ''
+  try {
+    await api(`/conversations/${activeConvId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    })
+    loadMessages(activeConvId)
+    loadConversations()
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
+
+function connectSocket() {
+  const token = getToken()
+  if (!token) return
+
+  socket = io('http://168.119.139.61:40272', {
+    auth: { token },
+  })
+
+  socket.on('connect', () => {
+    socket.emit('join:feed')
+    if (activeConvId) socket.emit('join:conversation', activeConvId)
+  })
+
+  socket.on('dm:new', (msg) => {
+    if (msg.conversationId === activeConvId) {
+      loadMessages(activeConvId)
+    }
+    loadConversations()
+  })
+
+  socket.on('presence:update', (users) => {
+    onlineUsers = users.map(u => u.id)
+  })
+}
+
+function render() {
+  requireAuth()
+  renderSidebar()
+  renderRightPanel()
+  loadConversations()
+  connectSocket()
+}
+
+document.addEventListener('DOMContentLoaded', render)
+</script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</body>
+</html>
