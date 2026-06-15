@@ -18,17 +18,14 @@
   </header>
   <main class="main-content">
     <div class="content-card">
-      <div class="search-box" style="width:100%;margin-bottom:16px">
+      <div class="search-box" style="margin-bottom:16px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input type="text" id="searchInput" placeholder="Suche nach Beiträgen, Communities..." onkeydown="if(event.key==='Enter')search()">
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <select id="searchType" style="padding:6px 12px;border-radius:8px;background:#0F172A;border:1px solid #334155;color:#F1F5F9;font-size:13px">
-          <option value="posts">Beiträge</option>
-          <option value="communities">Communities</option>
-          <option value="users">Benutzer</option>
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="search()">Suchen</button>
+      <div style="display:flex;border-bottom:2px solid #1e293b;margin-bottom:16px">
+        <button class="tab-btn active" data-type="posts" onclick="switchSearchType('posts')">Beiträge</button>
+        <button class="tab-btn" data-type="users" onclick="switchSearchType('users')">Benutzer</button>
+        <button class="tab-btn" data-type="communities" onclick="switchSearchType('communities')">Communities</button>
       </div>
       <div id="searchResults">
         <div class="empty-state"><p>Gib einen Suchbegriff ein</p></div>
@@ -42,16 +39,24 @@
 <script src="js/app.js"></script>
 <script src="js/layout.js"></script>
 <script>
+let searchType = 'posts'
+
+function switchSearchType(type) {
+  searchType = type
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'))
+  document.querySelector(`.tab-btn[data-type="${type}"]`).classList.add('active')
+  search()
+}
+
 function search() {
   const query = document.getElementById('searchInput').value.trim()
-  const type = document.getElementById('searchType').value
   if (!query) { document.getElementById('searchResults').innerHTML = '<div class="empty-state"><p>Gib einen Suchbegriff ein</p></div>'; return }
 
   document.getElementById('searchResults').innerHTML = '<p class="text-muted text-sm" style="text-align:center;padding:20px">Suche...</p>'
 
   let endpoint = ''
-  if (type === 'posts') endpoint = `/posts/search?q=${encodeURIComponent(query)}`
-  else endpoint = `/search?q=${encodeURIComponent(query)}`
+  if (searchType === 'posts') endpoint = `/posts/search?q=${encodeURIComponent(query)}`
+  else endpoint = `/search?q=${encodeURIComponent(query)}&type=${searchType}`
 
   api(endpoint).then(data => {
     const el = document.getElementById('searchResults')
@@ -61,25 +66,25 @@ function search() {
       return
     }
 
-    if (type === 'posts') {
+    if (searchType === 'posts') {
       el.innerHTML = items.map(p => createPostCard(p)).join('')
-    } else if (type === 'communities') {
+    } else if (searchType === 'communities') {
       el.innerHTML = items.map(c => `
         <a href="/community.html?slug=${c.slug}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
-          <span class="community-icon-small" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
+          <span style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
           <div style="flex:1;min-width:0">
             <div style="font-weight:600;color:#fff">r/${escapeHtml(c.slug)}</div>
             <div style="font-size:12px;color:#64748b">${c._count?.members || 0} Mitglieder</div>
           </div>
         </a>
       `).join('')
-    } else if (type === 'users') {
+    } else if (searchType === 'users') {
       el.innerHTML = items.map(u => `
         <a href="/profile.html?id=${u.id}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
-          ${getAvatarHtml(u, 'sm')}
+          ${getAvatarHtml(u, 'md')}
           <div style="flex:1;min-width:0">
-            <div style="font-weight:600;color:#fff">${escapeHtml(u.name)}</div>
-            <div style="font-size:12px;color:#64748b">@${escapeHtml(u.username || '')}</div>
+            <div style="font-weight:500;color:#fff">${escapeHtml(u.name)}</div>
+            <div style="font-size:12px;color:#64748b;margin-top:2px">@${escapeHtml(u.username || '')}</div>
           </div>
         </a>
       `).join('')

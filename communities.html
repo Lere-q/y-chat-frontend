@@ -19,10 +19,14 @@
   <main class="main-content">
     <div class="content-card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px">
-        <h2 style="font-size:18px;font-weight:700;color:#fff">Alle Communities</h2>
+        <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0">Alle Communities</h2>
         <a href="/community-new.html" class="btn btn-primary btn-sm">Erstellen</a>
       </div>
-      <div id="communityList"></div>
+      <div class="search-box" style="margin-bottom:16px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Community suchen..." id="communitySearch" oninput="filterCommunities()">
+      </div>
+      <div id="communityList" class="community-grid"></div>
     </div>
   </main>
   <aside class="right-panel" id="rightPanel"></aside>
@@ -32,29 +36,49 @@
 <script src="js/app.js"></script>
 <script src="js/layout.js"></script>
 <script>
+let allCommunities = []
+
 async function loadCommunities() {
   const el = document.getElementById('communityList')
-  el.innerHTML = '<p class="text-muted text-sm">Lädt...</p>'
+  el.innerHTML = '<p class="text-muted text-sm" style="text-align:center;padding:20px;grid-column:1/-1">Lädt...</p>'
   try {
     const data = await api('/communities?limit=50')
-    const items = data.data || []
-    if (items.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>Noch keine Communities</p></div>'
-      return
-    }
-    el.innerHTML = items.map(c => `
-      <a href="/community.html?slug=${c.slug}" class="community-item" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;text-decoration:none;color:inherit;transition:background 0.15s">
-        <span class="community-icon-small" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;color:#fff">r/${escapeHtml(c.slug)}</div>
-          <div style="font-size:12px;color:#64748b">${c._count.members || 0} Mitglieder · ${c._count.posts || 0} Beiträge</div>
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-    `).join('')
+    allCommunities = data.data || []
+    renderCommunities(allCommunities)
   } catch {
-    el.innerHTML = '<div class="empty-state"><p>Fehler beim Laden</p></div>'
+    el.innerHTML = '<p class="text-muted text-sm" style="text-align:center;padding:20px;grid-column:1/-1">Fehler beim Laden</p>'
   }
+}
+
+function renderCommunities(list) {
+  const el = document.getElementById('communityList')
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>Keine Communities gefunden</p></div>'
+    return
+  }
+  el.innerHTML = list.map(c => `
+    <a href="/community.html?slug=${c.slug}" class="community-card" style="text-decoration:none;color:inherit">
+      <div class="community-card-header">
+        <span style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
+        <div class="community-card-info">
+          <div class="community-card-name">r/${escapeHtml(c.slug)}</div>
+          ${c.description ? `<div class="community-card-desc">${escapeHtml(c.description)}</div>` : ''}
+        </div>
+      </div>
+      <div class="community-card-stats">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${c._count?.members || 0}</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${c._count?.posts || 0}</span>
+      </div>
+    </a>
+  `).join('')
+}
+
+function filterCommunities() {
+  const q = document.getElementById('communitySearch').value.toLowerCase()
+  const filtered = allCommunities.filter(c =>
+    c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q)
+  )
+  renderCommunities(filtered)
 }
 
 function render() {

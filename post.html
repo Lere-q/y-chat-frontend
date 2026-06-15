@@ -22,8 +22,25 @@
     <div id="topBarAvatar"></div>
   </header>
   <main class="main-content">
+    <div class="page-header">
+      <button class="back-btn" onclick="history.back()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h1 style="font-size:18px;font-weight:700;color:#fff;margin:0">Beitrag</h1>
+    </div>
     <div id="postDetail"></div>
-    <div id="repliesContainer" style="margin-top:8px"></div>
+    <div id="replyEditor" style="padding:12px 16px;border-bottom:1px solid rgba(30,41,59,0.5)">
+      <div style="display:flex;gap:12px">
+        <div id="replyAvatar"></div>
+        <div style="flex:1">
+          <textarea id="replyContent" placeholder="Antworten..." rows="2" style="width:100%;padding:10px 12px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#f1f5f9;font-size:14px;resize:none;outline:none" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#334155'"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button class="btn btn-primary btn-sm" onclick="submitReply()">Antworten</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="repliesContainer"></div>
   </main>
   <aside class="right-panel" id="rightPanel"></aside>
 </div>
@@ -43,6 +60,8 @@ async function loadPost() {
     document.title = `Beitrag von ${post.author.name} - Y-Chat`
     document.getElementById('postDetail').innerHTML = createPostCard(post)
     loadReplies()
+    const user = getUser()
+    if (user) document.getElementById('replyAvatar').innerHTML = getAvatarHtml(user, 'sm')
   } catch { document.getElementById('postDetail').innerHTML = '<div class="empty-state"><p>Beitrag nicht gefunden</p></div>' }
 }
 
@@ -52,29 +71,26 @@ async function loadReplies() {
   try {
     const data = await api(`/posts/${postId}/replies?limit=50`)
     const replies = data.data || []
-
-    let html = `<div class="content-card" style="padding:16px">
-      <h3 style="font-size:16px;font-weight:600;color:#fff;margin:0 0 12px">Antworten (${replies.length})</h3>`
-
-    if (replies.length === 0) {
-      html += '<p class="text-muted text-sm">Noch keine Antworten</p>'
-    } else {
-      html += replies.map(r => createPostCard(r)).join('')
-    }
-
-    html += `<div style="margin-top:16px;display:flex;gap:12px">
-      <div id="replyAvatar"></div>
-      <div style="flex:1">
-        <textarea id="replyContent" placeholder="Antworten..." rows="2" style="width:100%;padding:12px;border-radius:8px;background:#0F172A;border:1px solid #334155;color:#F1F5F9;font-size:14px;resize:none"></textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:8px">
-          <button class="btn btn-primary btn-sm" onclick="submitReply()">Antworten</button>
+    if (replies.length === 0) { container.innerHTML = ''; return }
+    container.innerHTML = replies.map(r => {
+      return `
+        <div class="post-card" style="padding:10px 16px">
+          <div class="post-card-inner" style="gap:8px">
+            <div class="post-avatar">
+              <a href="/profile.html?id=${r.author.id}">${getAvatarHtml(r.author, 'sm')}</a>
+            </div>
+            <div class="post-body">
+              <div style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:2px">
+                <a href="/profile.html?id=${r.author.id}" style="font-weight:500;color:#fff;text-decoration:none">${escapeHtml(r.author.name)}</a>
+                <span style="color:#64748b">·</span>
+                <span style="color:#64748b;font-size:12px">${formatDate(r.createdAt)}</span>
+              </div>
+              <div style="color:#e2e8f0;font-size:14px;white-space:pre-wrap">${escapeHtml(r.content)}</div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div></div>`
-
-    container.innerHTML = html
-    const user = getUser()
-    if (user) document.getElementById('replyAvatar').innerHTML = getAvatarHtml(user, 'sm')
+      `
+    }).join('')
   } catch { container.innerHTML = '' }
 }
 
@@ -82,7 +98,7 @@ async function submitReply() {
   const content = document.getElementById('replyContent').value.trim()
   if (!content) return
   try {
-    await api(`/posts/${postId}/reply`, { method: 'POST', body: JSON.stringify({ content }) })
+    await api(`/posts/${postId}/replies`, { method: 'POST', body: JSON.stringify({ content }) })
     document.getElementById('replyContent').value = ''
     showToast('Antwort gesendet', 'success')
     loadReplies()

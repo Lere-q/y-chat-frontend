@@ -33,6 +33,10 @@
         <label for="password">Passwort</label>
         <input type="password" id="password" placeholder="••••••••" required>
       </div>
+      <div class="form-group">
+        <label for="passwordConfirm">Passwort bestätigen</label>
+        <input type="password" id="passwordConfirm" placeholder="••••••••" required>
+      </div>
       <div class="form-error hidden" id="formError"></div>
       <button type="submit" class="btn btn-primary btn-full">Registrieren</button>
     </form>
@@ -49,8 +53,15 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   const email = document.getElementById('email').value
   const username = document.getElementById('username').value
   const password = document.getElementById('password').value
+  const passwordConfirm = document.getElementById('passwordConfirm').value
   const errorEl = document.getElementById('formError')
   const btn = e.target.querySelector('button[type="submit"]')
+
+  if (password !== passwordConfirm) {
+    errorEl.textContent = 'Passwörter stimmen nicht überein'
+    errorEl.classList.remove('hidden')
+    return
+  }
 
   errorEl.classList.add('hidden')
   btn.disabled = true

@@ -88,7 +88,7 @@ input, textarea, select { font-family: inherit; }
 
 .sidebar-header .logo-y { color: #6366f1; }
 .sidebar-header .logo-chat { color: #fff; }
-.logo-text { font-size: 24px; font-weight: 800; line-height: 1; }
+.logo-text { font-size: 24px; font-weight: 700; line-height: 1; }
 
 .sidebar-nav {
   flex: 1;
@@ -408,7 +408,7 @@ input, textarea, select { font-family: inherit; }
 .post-editor textarea {
   width: 100%;
   background: transparent;
-  color: #e2e8f0;
+  color: #f1f5f9;
   font-size: 14px;
   resize: none;
   border: none;
@@ -498,8 +498,9 @@ input, textarea, select { font-family: inherit; }
   cursor: pointer;
   transition: all 0.15s;
   font-size: 14px;
-  padding: 10px 20px;
+  padding: 10px 16px;
   line-height: 1;
+  height: 40px;
 }
 
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -535,7 +536,7 @@ input, textarea, select { font-family: inherit; }
   flex-shrink: 0;
 }
 
-.avatar-sm { width: 24px; height: 24px; font-size: 10px; }
+.avatar-sm { width: 24px; height: 24px; font-size: 12px; }
 .avatar-md { width: 36px; height: 36px; font-size: 14px; }
 .avatar-lg { width: 48px; height: 48px; font-size: 16px; }
 .avatar-xl { width: 80px; height: 80px; font-size: 24px; }
@@ -547,7 +548,7 @@ input, textarea, select { font-family: inherit; }
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-weight: 600;
+  font-weight: 500;
   flex-shrink: 0;
 }
 
@@ -658,14 +659,11 @@ input, textarea, select { font-family: inherit; }
 
 .post-action-btn svg { width: 16px; height: 16px; }
 
-/* ===================== */
-/* SKELETON              */
-/* ===================== */
+/* Skeleton */
 .skeleton {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  background: rgba(51,65,85,0.6);
   border-radius: 4px;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .skeleton-text {
@@ -674,9 +672,9 @@ input, textarea, select { font-family: inherit; }
   border-radius: 4px;
 }
 
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* ===================== */
@@ -693,7 +691,7 @@ input, textarea, select { font-family: inherit; }
 
 .auth-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 384px;
   background: #1e293b;
   border-radius: 12px;
   padding: 32px;
@@ -712,20 +710,22 @@ input, textarea, select { font-family: inherit; }
   font-size: 24px;
   font-weight: 700;
   color: #fff;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
 }
 
 .auth-subtitle {
   font-size: 14px;
   color: #64748b;
+  margin-bottom: 24px;
 }
 
-.auth-form { margin-bottom: 16px; }
+.auth-form { margin-bottom: 24px; }
 
 .auth-footer {
   text-align: center;
   font-size: 14px;
   color: #64748b;
+  margin-top: 24px;
 }
 
 .auth-footer a {
@@ -751,10 +751,10 @@ input, textarea, select { font-family: inherit; }
 .form-group select {
   width: 100%;
   background: #1e293b;
-  color: #e2e8f0;
+  color: #f1f5f9;
   border: 1px solid #334155;
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px 16px;
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s;
@@ -801,7 +801,7 @@ input, textarea, select { font-family: inherit; }
   background: #1e293b;
   color: #fff;
   border: 1px solid #334155;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 10px 12px 10px 36px;
   font-size: 14px;
   outline: none;
@@ -925,7 +925,7 @@ input, textarea, select { font-family: inherit; }
   gap: 16px;
   font-size: 12px;
   color: #64748b;
-  margin-top: 8px;
+  margin-top: 12px;
   flex-wrap: wrap;
 }
 
@@ -1067,7 +1067,7 @@ input, textarea, select { font-family: inherit; }
 .message-content { min-width: 0; }
 
 .message-bubble {
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: 12px;
   font-size: 14px;
   line-height: 1.4;
@@ -1089,13 +1089,12 @@ input, textarea, select { font-family: inherit; }
 
 .message-time {
   font-size: 10px;
-  color: #64748b;
   margin-top: 2px;
   display: block;
 }
 
-.message.own .message-time { text-align: right; }
-.message.other .message-time { text-align: left; }
+.message.own .message-time { color: #c7d2fe; text-align: right; }
+.message.other .message-time { color: #64748b; text-align: left; }
 
 /* ===================== */
 /* CONVERSATION LIST     */
@@ -1122,10 +1121,36 @@ input, textarea, select { font-family: inherit; }
 .empty-state {
   text-align: center;
   padding: 48px 16px;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .empty-state p { font-size: 14px; }
+
+/* ===================== */
+/* PAGE HEADER           */
+/* ===================== */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  height: 56px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.page-header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.back-btn {
+  color: #94a3b8;
+  display: flex;
+  padding: 4px;
+}
+
+.back-btn:hover { color: #fff; }
 
 /* ===================== */
 /* MODAL / OVERLAY       */

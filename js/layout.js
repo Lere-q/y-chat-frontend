@@ -1,11 +1,18 @@
 // Sidebar and RightPanel rendering
 
+let sidebarCollapsed = false
+
+// Restore collapsed state
+try { sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true' } catch {}
+
 function renderSidebar() {
   const sidebar = document.getElementById('sidebar')
   if (!sidebar) return
 
   const currentPath = window.location.pathname
   const user = getUser()
+
+  if (sidebarCollapsed) sidebar.classList.add('collapsed')
 
   let html = `
     <div class="sidebar-header">
@@ -32,7 +39,13 @@ function renderSidebar() {
 
   html += `<div class="sidebar-divider"></div>`
 
-  // Load communities for sidebar (async, will append after)
+  // Settings link always visible
+  html += `<a href="/settings.html" class="nav-link ${currentPath === '/settings.html' ? 'active' : ''}" style="margin-bottom:4px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Einstellungen</span>
+  </a>`
+
+  // Load communities for sidebar
   loadCommunitiesForSidebar().then(communities => {
     const sidebarNav = sidebar.querySelector('.sidebar-nav')
     if (!sidebarNav) return
@@ -63,7 +76,7 @@ function renderSidebar() {
     }
   })
 
-  // Sidebar collapse toggle (desktop only)
+  // Sidebar collapse toggle (desktop only) + footer
   html += `</nav>
     <div class="sidebar-footer">
       <button class="collapse-btn" onclick="toggleSidebarCollapse()" title="Sidebar umschalten" style="display:flex;align-items:center;justify-content:center;width:100%;margin-top:4px">
@@ -73,10 +86,6 @@ function renderSidebar() {
 
   if (user) {
     html += `
-      <a href="/settings.html" class="settings-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Einstellungen</span>
-      </a>
       <div class="user-card">
         ${getAvatarHtml(user, 'sm')}
         <span class="user-name">${escapeHtml(user.name)}</span>
@@ -89,10 +98,7 @@ function renderSidebar() {
 
   html += '</div>'
   sidebar.innerHTML = html
-  sidebar.classList.remove('mobile-open')
 }
-
-let sidebarCollapsed = false
 
 function toggleSidebarCollapse() {
   const sidebar = document.getElementById('sidebar')
@@ -100,11 +106,8 @@ function toggleSidebarCollapse() {
   sidebarCollapsed = !sidebarCollapsed
   sidebar.classList.toggle('collapsed', sidebarCollapsed)
   const main = document.querySelector('.main-content')
-  if (main) {
-    const newLeft = sidebarCollapsed ? '60px' : '220px'
-    if (window.innerWidth >= 1024) {
-      main.style.marginLeft = newLeft
-    }
+  if (main && window.innerWidth >= 1024) {
+    main.style.marginLeft = sidebarCollapsed ? '60px' : '220px'
   }
   localStorage.setItem('sidebarCollapsed', sidebarCollapsed)
 }
@@ -178,20 +181,19 @@ function renderRightPanel() {
       return
     }
     trendingEl.innerHTML = items.map((item, i) => `
-      <a href="/community.html?slug=${item.slug}" class="trending-item" style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid rgba(30,41,59,0.3);text-decoration:none;color:inherit">
-        <div style="font-size:12px;font-weight:700;color:#475569;width:16px;flex-shrink:0;text-align:center">${i + 1}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">r/${item.slug}</div>
-          <div style="display:flex;gap:12px;font-size:11px;color:#64748b;margin-top:2px">
-            <span>📝 ${item.postCount} heute</span>
-            <span>👥 ${item.memberCount}</span>
-          </div>
+      <a href="/community.html?slug=${item.slug}" class="trending-item" style="display:flex;align-items:center;gap:12px;padding:8px 0;text-decoration:none;color:inherit;border-bottom:1px solid rgba(30,41,59,0.3)">
+        <div style="font-size:14px;font-weight:500;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">
+          r/${item.slug}
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:12px;color:#64748b;flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          ${item.postCount}
         </div>
       </a>
     `).join('')
   }).catch(() => {})
 
-  // Try to load online users - placeholder
+  // Online users
   api('/users/online').then(data => {
     const onlineEl = document.getElementById('onlineUsers')
     const users = (data.data || []).slice(0, 8)
@@ -202,7 +204,7 @@ function renderRightPanel() {
     onlineEl.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
       users.map(u => `<div style="position:relative;display:inline-flex" title="${escapeHtml(u.name)}">
         ${getAvatarHtml(u, 'sm')}
-        <span style="position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;background:#22c55e;border-radius:50%;border:2px solid #0f172a"></span>
+        <span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;background:#22c55e;border-radius:50%;border:2px solid #0f172a"></span>
       </div>`).join('') +
       '</div>'
   }).catch(() => {})

@@ -23,7 +23,12 @@
   </header>
   <main class="main-content">
     <div id="profileHeader"></div>
-    <div id="profilePosts"></div>
+    <div id="profileTabs" class="tabs">
+      <button class="tab-btn active" data-tab="posts" onclick="switchProfileTab('posts')">Beiträge</button>
+      <button class="tab-btn" data-tab="liked" onclick="switchProfileTab('liked')">Gefällt mir</button>
+      <button class="tab-btn" data-tab="communities" onclick="switchProfileTab('communities')">Communities</button>
+    </div>
+    <div id="profileContent"></div>
   </main>
   <aside class="right-panel" id="rightPanel"></aside>
 </div>
@@ -34,78 +39,117 @@
 <script>
 const params = new URLSearchParams(location.search)
 const profileId = params.get('id')
+let profile = null
+let activeTab = 'posts'
 
 async function loadProfile() {
   if (!profileId) {
     const user = getUser()
-    if (user) {
-      location.href = `/profile.html?id=${user.id}`
-      return
-    }
-    location.href = '/login.html'
-    return
+    if (user) { location.href = `/profile.html?id=${user.id}`; return }
+    location.href = '/login.html'; return
   }
 
   try {
-    let profile
-    try { profile = await api(`/users/${profileId}`); profile = profile.data } catch {}
+    let data
+    try { data = await api(`/users/${profileId}`); profile = data.data } catch {}
     if (!profile) {
-      // Try fetching current user
       const user = getUser()
-      if (user && user.id === profileId) {
-        profile = user
-      } else {
-        document.getElementById('profileHeader').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'
-        return
-      }
+      if (user && user.id === profileId) { profile = user }
+      else { document.getElementById('profileHeader').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'; return }
     }
-
     document.title = `${escapeHtml(profile.name)} - Y-Chat`
     renderProfile(profile)
-    loadProfilePosts(profileId)
+    loadTabContent('posts')
   } catch {
     document.getElementById('profileHeader').innerHTML = '<div class="empty-state"><p>Profil nicht gefunden</p></div>'
   }
 }
 
-function renderProfile(profile) {
+function renderProfile(p) {
   const el = document.getElementById('profileHeader')
   const currentUser = getUser()
-  const isOwn = currentUser && currentUser.id === profile.id
+  const isOwn = currentUser && currentUser.id === p.id
 
   el.innerHTML = `
-    <div class="content-card" style="overflow:hidden;border-bottom:1px solid #1e293b;border-radius:0">
+    <div style="border-bottom:1px solid #1e293b">
       <div style="height:128px;background:linear-gradient(to right,#3730a3,#334155)"></div>
       <div style="padding:0 16px 16px">
-        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:-40px;margin-bottom:12px;width:fit-content">
-          <div style="border:4px solid #0f172a;border-radius:50%;display:inline-flex">${getAvatarHtml(profile, 'xl')}</div>
-          ${isOwn ? `<a href="/settings.html" class="btn btn-outline btn-sm" style="margin-left:auto;margin-bottom:8px">Profil bearbeiten</a>` : ''}
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:-40px;margin-bottom:12px">
+          <div style="border:4px solid #0f172a;border-radius:50%">${getAvatarHtml(p, 'xl')}</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            ${!isOwn ? `<button class="btn ${p.isFollowing ? 'btn-outline' : 'btn-primary'} btn-sm follow-btn" onclick="toggleFollow()">${p.isFollowing ? 'Folgt' : 'Folgen'}</button>` : ''}
+            ${isOwn ? `<a href="/settings.html" class="btn btn-outline btn-sm">Profil bearbeiten</a>` : ''}
+          </div>
         </div>
-        <h1 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 2px">${escapeHtml(profile.name)}</h1>
-        <p style="font-size:14px;color:#64748b;margin:0">@${escapeHtml(profile.username || '')}</p>
-        ${profile.bio ? `<p style="font-size:14px;color:#94a3b8;margin:8px 0;line-height:1.4;white-space:pre-wrap">${escapeHtml(profile.bio)}</p>` : ''}
+        <h1 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 2px">${escapeHtml(p.name)}</h1>
+        ${p.bio ? `<p style="font-size:14px;color:#94a3b8;margin:2px 0 0;line-height:1.4;white-space:pre-wrap">${escapeHtml(p.bio)}</p>` : ''}
         <div style="display:flex;gap:16px;margin-top:8px;font-size:14px;color:#64748b">
-          <span><strong style="color:#fff;font-weight:600">${profile._count?.posts || 0}</strong> Beiträge</span>
-          <span><strong style="color:#fff;font-weight:600">${profile._count?.followers || 0}</strong> Follower</span>
-          <span><strong style="color:#fff;font-weight:600">${profile._count?.following || 0}</strong> Folgt</span>
+          <span><strong style="color:#fff;font-weight:600">${p._count?.posts || 0}</strong> Beiträge</span>
+          <span><strong style="color:#fff;font-weight:600">${p._count?.followers || 0}</strong> Follower</span>
+          <span><strong style="color:#fff;font-weight:600">${p._count?.following || 0}</strong> Folgt</span>
         </div>
       </div>
     </div>
   `
 }
 
-async function loadProfilePosts(userId) {
-  const el = document.getElementById('profilePosts')
+async function toggleFollow() {
+  if (!profile) return
   try {
-    const data = await api(`/posts?authorId=${userId}&limit=50`)
-    const posts = data.data || []
-    if (posts.length === 0) {
-      el.innerHTML = '<div class="empty-state" style="margin-top:8px"><p>Noch keine Beiträge</p></div>'
-      return
+    const method = profile.isFollowing ? 'DELETE' : 'POST'
+    await api(`/users/${profile.id}/follow`, { method })
+    profile.isFollowing = !profile.isFollowing
+    const btn = document.querySelector('.follow-btn')
+    if (btn) {
+      btn.textContent = profile.isFollowing ? 'Folgt' : 'Folgen'
+      btn.className = `btn ${profile.isFollowing ? 'btn-outline' : 'btn-primary'} btn-sm follow-btn`
     }
-    el.innerHTML = posts.map(p => createPostCard(p)).join('')
+  } catch {}
+}
+
+function switchProfileTab(tab) {
+  activeTab = tab
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'))
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active')
+  loadTabContent(tab)
+}
+
+async function loadTabContent(tab) {
+  const el = document.getElementById('profileContent')
+  if (!profile) return
+  el.innerHTML = '<p class="text-muted text-sm" style="text-align:center;padding:20px">Lädt...</p>'
+  try {
+    let data
+    if (tab === 'posts') {
+      data = await api(`/posts?authorId=${profile.id}&limit=50`)
+      const posts = data.data || []
+      el.innerHTML = posts.length ? posts.map(p => createPostCard(p)).join('') : '<div class="empty-state"><p>Noch keine Beiträge</p></div>'
+    } else if (tab === 'liked') {
+      data = await api(`/users/${profile.id}/likes`)
+      const posts = data.data || []
+      el.innerHTML = posts.length ? posts.map(p => createPostCard(p)).join('') : '<div class="empty-state"><p>Keine gelikten Beiträge</p></div>'
+    } else if (tab === 'communities') {
+      data = await api(`/users/${profile.id}/communities`)
+      const communities = data.data || []
+      if (communities.length === 0) { el.innerHTML = '<div class="empty-state"><p>Keine Communities</p></div>'; return }
+      el.innerHTML = '<div class="community-grid">' + communities.map(c => `
+        <a href="/community.html?slug=${c.slug}" class="community-card">
+          <div class="community-card-header">
+            <span style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${c.name[0]}</span>
+            <div class="community-card-info">
+              <div class="community-card-name">r/${escapeHtml(c.slug)}</div>
+              ${c.description ? `<div class="community-card-desc">${escapeHtml(c.description)}</div>` : ''}
+            </div>
+          </div>
+          <div class="community-card-stats">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>${c._count?.members || 0}</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${c._count?.posts || 0}</span>
+          </div>
+        </a>
+      `).join('') + '</div>'
+    }
   } catch {
-    el.innerHTML = '<div class="empty-state" style="margin-top:8px"><p>Fehler beim Laden</p></div>'
+    el.innerHTML = '<div class="empty-state"><p>Fehler beim Laden</p></div>'
   }
 }
 
